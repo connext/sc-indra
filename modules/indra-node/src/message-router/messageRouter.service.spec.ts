@@ -111,7 +111,7 @@ class MockMessagingClient extends ClientProxy {
   }
 
   send<TResult = any, TInput = any>(pattern: any, data: TInput) {
-    return new Observable<TResult>(subscriber => {
+    return new Observable<TResult>((subscriber) => {
       setTimeout(() => {
         subscriber.next(4 as any);
         subscriber.complete();

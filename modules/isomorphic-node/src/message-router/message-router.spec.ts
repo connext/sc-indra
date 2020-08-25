@@ -1,5 +1,5 @@
+import "reflect-metadata"; // TODO: move this somewhere
 import { container } from "tsyringe";
-import { IMessagingService } from "../messaging-service";
 import {
   WalletInterface,
   CreateChannelParams,
@@ -16,6 +16,7 @@ import {
 import { Message, Participant } from "@statechannels/wallet-core";
 import { describe } from "mocha";
 
+import { IMessagingService } from "../messaging-service";
 import { expect } from "../test";
 import { MessageRouter } from ".";
 
