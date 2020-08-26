@@ -1,9 +1,6 @@
 import { registry, singleton, inject } from "tsyringe";
 import { Wallet } from "@statechannels/server-wallet";
-import {
-  WalletInterface,
-  CreateChannelParams,
-} from "@statechannels/server-wallet";
+import { WalletInterface } from "@statechannels/server-wallet";
 import {
   JoinChannelParams,
   UpdateChannelParams,
