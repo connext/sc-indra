@@ -4,7 +4,7 @@ export const mkAddress = (prefix = "0xa"): string => {
   return prefix.padEnd(42, "0");
 };
 
-export const mkId = (prefix = "indra"): string => {
+export const mkPublicIdentifier = (prefix = "indra"): string => {
   return prefix.padEnd(55, "1");
 };
 
