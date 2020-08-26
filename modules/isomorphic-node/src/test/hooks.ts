@@ -1,1 +1,1 @@
-import "reflect-metadata"; // TODO: move this somewhere
+import "reflect-metadata";

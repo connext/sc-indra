@@ -1,5 +1,6 @@
 import "reflect-metadata";
 import { container } from "tsyringe";
-import { MessageRouter } from "./message-router";
 
-const messageRouter = container.resolve(MessageRouter);
+import { WalletService } from "./wallet-service";
+
+const walletService = container.resolve(WalletService);
