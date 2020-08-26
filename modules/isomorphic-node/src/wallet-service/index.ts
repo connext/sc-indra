@@ -98,7 +98,6 @@ export class WalletService implements IWalletService {
   createChannel(
     args: CreateChannelParams
   ): Promise<{
-    outbox: Pick<StateChannelsNotification, "method" | "params">[];
     channelResult: ChannelResult;
   }> {
     return this.wallet.createChannel(args);
@@ -106,7 +105,6 @@ export class WalletService implements IWalletService {
   joinChannel(
     args: JoinChannelParams
   ): Promise<{
-    outbox: Pick<StateChannelsNotification, "method" | "params">[];
     channelResult: ChannelResult;
   }> {
     throw new Error("Method not implemented.");
@@ -114,7 +112,6 @@ export class WalletService implements IWalletService {
   updateChannel(
     args: UpdateChannelParams
   ): Promise<{
-    outbox: Pick<StateChannelsNotification, "method" | "params">[];
     channelResult: ChannelResult;
   }> {
     throw new Error("Method not implemented.");
@@ -122,13 +119,11 @@ export class WalletService implements IWalletService {
   closeChannel(
     args: CloseChannelParams
   ): Promise<{
-    outbox: Pick<StateChannelsNotification, "method" | "params">[];
     channelResult: ChannelResult;
   }> {
     throw new Error("Method not implemented.");
   }
   getChannels(): Promise<{
-    outbox: Pick<StateChannelsNotification, "method" | "params">[];
     channelResults: ChannelResult[];
   }> {
     throw new Error("Method not implemented.");
@@ -136,7 +131,6 @@ export class WalletService implements IWalletService {
   getState(
     args: GetStateParams
   ): Promise<{
-    outbox: Pick<StateChannelsNotification, "method" | "params">[];
     channelResult: ChannelResult;
   }> {
     throw new Error("Method not implemented.");
@@ -157,10 +151,11 @@ export class WalletService implements IWalletService {
   getWalletInformation(): Promise<{ channelResult: ChannelResult }> {
     throw new Error("Method not implemented.");
   }
+
+  // TODO: probably shouldnt be in this interface?
   pushMessage(
     m: Message
   ): Promise<{
-    outbox: Pick<StateChannelsNotification, "method" | "params">[];
     channelResults: ChannelResult[];
   }> {
     throw new Error("Method not implemented.");
