@@ -211,6 +211,7 @@ export class WalletService implements IWalletService {
   {
     token: INJECTION_TOKEN.WALLET,
     useFactory: (dependencyContainer) => {
+      // TODO: inject config into wallet
       return new Wallet();
     },
   },
