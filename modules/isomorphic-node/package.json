@@ -9,6 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@connext/messaging": "^7.3.8",
+    "@connext/types": "^7.3.8",
     "@statechannels/client-api-schema": "^0.3.0",
     "@statechannels/server-wallet": "^0.3.2",
     "@statechannels/wallet-core": "^0.3.0",

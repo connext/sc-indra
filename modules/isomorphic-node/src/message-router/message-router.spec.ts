@@ -15,8 +15,8 @@ import {
 } from "@statechannels/client-api-schema";
 import { Message, Participant } from "@statechannels/wallet-core";
 import { describe } from "mocha";
+import { IMessagingService } from "@connext/types";
 
-import { IMessagingService } from "../messaging-service";
 import { expect } from "../test";
 import { MessageRouter } from ".";
 
