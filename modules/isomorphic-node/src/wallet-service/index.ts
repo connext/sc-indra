@@ -3,20 +3,28 @@ import { Wallet } from "@statechannels/server-wallet";
 import {
   WalletInterface,
   CreateChannelParams,
-  UpdateChannelFundingParams,
 } from "@statechannels/server-wallet";
 import {
   JoinChannelParams,
   UpdateChannelParams,
   CloseChannelParams,
   GetStateParams,
-  StateChannelsNotification,
   ChannelResult,
   ChannelId,
   Address,
 } from "@statechannels/client-api-schema";
-import { Message, Participant } from "@statechannels/wallet-core";
+import {
+  Message,
+  Participant,
+  makeDestination,
+  Destination,
+} from "@statechannels/wallet-core";
+import { Message as WireMessage } from "@statechannels/wire-format";
+import { IMessagingService } from "@connext/types";
+import { constants, BigNumber } from "ethers";
+
 import { INJECTION_TOKEN } from "../constants";
+import { ConfigService } from "../config";
 
 type DefundChannelParams = {
   channelId: ChannelId;
@@ -35,11 +43,7 @@ type GetWalletInformationResult = {
 };
 
 export interface IWalletService {
-  createChannel(
-    args: CreateChannelParams
-  ): Promise<{
-    channelResult: ChannelResult;
-  }>;
+  createChannel(receiver: Participant): Promise<ChannelResult>;
   joinChannel(
     args: JoinChannelParams
   ): Promise<{
@@ -78,30 +82,71 @@ export interface IWalletService {
   ): Promise<{
     channelResult: ChannelResult;
   }>;
-  getWalletInformation(): Promise<{ channelResult: ChannelResult }>;
-  pushMessage(
-    m: Message
-  ): Promise<{
-    channelResults: ChannelResult[];
-  }>;
-  onNotification(
-    cb: (notice: StateChannelsNotification) => void
-  ): { unsubscribe: () => void };
+  getWalletInformation(): Promise<GetWalletInformationResult>;
 }
+
+const getSubjectFromPublicId = (publicId: string, nodeId: string): string => {
+  return `${nodeId}.${publicId}`;
+};
 
 // TODO: replace calls to wallet with JSON-RPC calls
 @singleton()
 export class WalletService implements IWalletService {
   constructor(
-    @inject(INJECTION_TOKEN.WALLET) private readonly wallet: WalletInterface
+    @inject(INJECTION_TOKEN.WALLET) private readonly wallet: WalletInterface,
+    @inject(INJECTION_TOKEN.MESSAGING_SERVICE)
+    private readonly messagingService: IMessagingService,
+    private readonly configService: ConfigService
   ) {}
-  createChannel(
-    args: CreateChannelParams
-  ): Promise<{
-    channelResult: ChannelResult;
-  }> {
-    return this.wallet.createChannel(args);
+  public get destination(): Destination {
+    return makeDestination(this.configService.getSignerAddress());
   }
+
+  public get me(): Participant {
+    return {
+      signingAddress: this.configService.getSignerAddress(),
+      destination: this.destination,
+      participantId: this.configService.getPublicIdentifer(),
+    };
+  }
+
+  async createChannel(receiver: Participant): Promise<ChannelResult> {
+    const {
+      outbox: [{ params }],
+      channelResult: { channelId },
+    } = await this.wallet.createChannel({
+      appData: "0x",
+      appDefinition: constants.AddressZero,
+      fundingStrategy: "Direct", // TODO
+      participants: [this.me, receiver],
+      allocations: [
+        {
+          token: constants.AddressZero,
+          allocationItems: [
+            {
+              amount: BigNumber.from(0).toString(),
+              destination: this.destination,
+            },
+            {
+              amount: BigNumber.from(0).toString(),
+              destination: receiver.destination,
+            },
+          ],
+        },
+      ],
+    });
+
+    const reply = await this.messageReceiverAndExpectReply(
+      receiver.participantId,
+      ((params as WireMessage).data as unknown) as Message // fix types
+    );
+    await this.wallet.pushMessage(reply);
+
+    const { channelResult } = await this.wallet.getState({ channelId });
+
+    return channelResult;
+  }
+
   joinChannel(
     args: JoinChannelParams
   ): Promise<{
@@ -148,28 +193,26 @@ export class WalletService implements IWalletService {
   ): Promise<{ channelResult: ChannelResult }> {
     throw new Error("Method not implemented.");
   }
-  getWalletInformation(): Promise<{ channelResult: ChannelResult }> {
+  getWalletInformation(): Promise<GetWalletInformationResult> {
     throw new Error("Method not implemented.");
   }
 
-  // TODO: probably shouldnt be in this interface?
-  pushMessage(
-    m: Message
-  ): Promise<{
-    channelResults: ChannelResult[];
-  }> {
-    throw new Error("Method not implemented.");
-  }
-  onNotification(
-    cb: (notice: StateChannelsNotification) => void
-  ): { unsubscribe: () => void } {
-    throw new Error("Method not implemented.");
+  private async messageReceiverAndExpectReply(
+    receiverId: string,
+    message: Message
+  ): Promise<Message> {
+    const reply = await this.messagingService.request(
+      getSubjectFromPublicId(receiverId, "FIXME"),
+      10_000,
+      message
+    );
+    return reply;
   }
 }
 
 @registry([
   {
-    token: "WALLET",
+    token: INJECTION_TOKEN.WALLET,
     useFactory: (dependencyContainer) => {
       return new Wallet();
     },

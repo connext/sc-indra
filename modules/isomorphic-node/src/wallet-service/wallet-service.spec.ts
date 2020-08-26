@@ -15,10 +15,61 @@ import {
 } from "@statechannels/client-api-schema";
 import { Message, Participant } from "@statechannels/wallet-core";
 import { describe } from "mocha";
-import { IMessagingService } from "@connext/types";
+import { constants, BigNumber } from "ethers";
 
-import { expect } from "../test";
-import { MessageRouter } from ".";
+import { expect, mkAddress, mkId, mkBytes32 } from "../test";
+import { WalletService } from ".";
+import { MockMessagingService } from "../messaging-service/messaging-service.spec";
+import { Outgoing } from "@statechannels/server-wallet/lib/src/protocols/actions";
+
+const mockChannelResult = (
+  overrides: Partial<ChannelResult> = {}
+): ChannelResult => {
+  return {
+    allocations: [
+      {
+        token: constants.AddressZero,
+        allocationItems: [
+          {
+            amount: BigNumber.from(0).toString(),
+            destination: mkAddress("0xa"),
+          },
+          {
+            amount: BigNumber.from(0).toString(),
+            destination: mkAddress("0xb"),
+          },
+        ],
+      },
+    ],
+    appData: "0x",
+    appDefinition: constants.AddressZero,
+    participants: [
+      {
+        destination: mkAddress("0xa"),
+        participantId: mkId("1"),
+        signingAddress: mkAddress("0x1"),
+      },
+      {
+        destination: mkAddress("0xb"),
+        participantId: mkId("1"),
+        signingAddress: mkAddress("0x1"),
+      },
+    ],
+    channelId: mkBytes32(),
+    status: "proposed",
+    turnNum: 0,
+    challengeExpirationTime: 0,
+    ...overrides,
+  };
+};
+
+export const mockOutgoing = (overrides: Partial<Outgoing> = {}): Outgoing => {
+  return {
+    method: "ChannelProposed",
+    params: mockChannelResult(),
+    ...overrides,
+  };
+};
 
 export class MockWallet implements WalletInterface {
   getParticipant(): Promise<Participant> {
@@ -30,7 +81,11 @@ export class MockWallet implements WalletInterface {
     outbox: Pick<StateChannelsNotification, "method" | "params">[];
     channelResult: ChannelResult;
   }> {
-    throw new Error("Method not implemented.");
+    const channelResult = mockChannelResult({ ...args, status: "opening" });
+    return Promise.resolve({
+      outbox: [{ method: "ChannelProposed", params: channelResult }],
+      channelResult,
+    });
   }
   joinChannel(
     args: JoinChannelParams
@@ -88,61 +143,19 @@ export class MockWallet implements WalletInterface {
   }
 }
 
-class MockMessagingService implements IMessagingService {
-  connect(): Promise<void> {
-    throw new Error("Method not implemented.");
-  }
-  disconnect(): Promise<void> {
-    throw new Error("Method not implemented.");
-  }
-  flush(): Promise<void> {
-    throw new Error("Method not implemented.");
-  }
-  onReceive(subject: string, callback: (msg: any) => void): Promise<void> {
-    throw new Error("Method not implemented.");
-  }
-  publish(subject: string, data: any): Promise<void> {
-    throw new Error("Method not implemented.");
-  }
-  request(
-    subject: string,
-    timeout: number,
-    data: Record<string, any>,
-    callback?: (response: any) => any
-  ): Promise<any> {
-    throw new Error("Method not implemented.");
-  }
-  send(to: string, msg: any): Promise<void> {
-    throw new Error("Method not implemented.");
-  }
-  subscribe(subject: string, callback: (msg: any) => void): Promise<void> {
-    throw new Error("Method not implemented.");
-  }
-  unsubscribe(subject: string): Promise<void> {
-    throw new Error("Method not implemented.");
-  }
-}
-
-describe("MessageRouter", () => {
-  let messagingRouter: MessageRouter;
+describe("WalletService", () => {
+  let walletService: WalletService;
   beforeEach(() => {
     container.register("MESSAGING_SERVICE", { useClass: MockMessagingService });
     container.register("WALLET", { useValue: new MockWallet() });
-    messagingRouter = container.resolve(MessageRouter);
+    walletService = container.resolve(WalletService);
   });
 
   afterEach(() => {
     container.reset();
   });
 
-  it("should message receiver", async () => {
-    const reply = await messagingRouter.messageReceiverAndExpectReply(
-      "testing",
-      {
-        signedStates: [],
-        objectives: [],
-      }
-    );
-    expect(reply).to.deep.equal({});
+  it("should create a channel", async () => {
+    expect(true).to.be.ok;
   });
 });
