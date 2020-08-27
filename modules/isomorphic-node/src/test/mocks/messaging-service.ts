@@ -22,7 +22,8 @@ export class MockMessagingService implements IMessagingService {
     data: Record<string, any>,
     callback?: (response: any) => any
   ): Promise<any> {
-    throw new Error("Method not implemented.");
+    // mirror the data back
+    return Promise.resolve(data);
   }
   send(to: string, msg: any): Promise<void> {
     throw new Error("Method not implemented.");

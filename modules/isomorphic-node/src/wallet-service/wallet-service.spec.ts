@@ -14,6 +14,7 @@ import {
 import { WalletService } from ".";
 import { INJECTION_TOKEN } from "../constants";
 import { ConfigService } from "../config";
+import { constants } from "ethers";
 
 describe("WalletService", () => {
   let walletService: WalletService;
@@ -37,7 +38,9 @@ describe("WalletService", () => {
       signingAddress: mkAddress("0xbad"),
     };
     const result = await walletService.createChannel(testParticipant);
-    expect(result.allocations.length).to.be.eq(2);
-    expect(result.allocations[0]).to.deep.eq({} as Allocation);
+    expect(result.allocations.length).to.be.eq(1);
+    expect(result.allocations[0].allocationItems.length).to.be.eq(2);
+    expect(result.allocations[0].token).to.be.eq(constants.AddressZero);
+    // TODO: fixed expects
   });
 });

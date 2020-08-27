@@ -10,8 +10,14 @@ import {
   GetStateParams,
   StateChannelsNotification,
   ChannelResult,
+  Bytes32,
 } from "@statechannels/client-api-schema";
-import { Message, Participant } from "@statechannels/wallet-core";
+import {
+  Message,
+  Participant,
+  calculateChannelId,
+  Objective,
+} from "@statechannels/wallet-core";
 import { constants } from "ethers";
 import { BigNumber } from "@connext/types";
 import { Outgoing } from "@statechannels/server-wallet/lib/src/protocols/actions";
@@ -67,6 +73,23 @@ export const mockOutgoing = (overrides: Partial<Outgoing> = {}): Outgoing => {
   };
 };
 
+export const getMethodFromObjective = (
+  objective: Objective
+): StateChannelsNotification["method"] => {
+  switch (objective.type) {
+    case "OpenChannel":
+      return "ChannelProposed";
+    case "VirtuallyFund":
+      return "BudgetUpdated";
+    case "FundLedger":
+      return "BudgetUpdated";
+    case "FundGuarantor":
+      return "BudgetUpdated";
+    case "CloseLedger":
+      return "ChannelClosed";
+  }
+};
+
 // TODO: update this with correct interface when ready
 export class MockWallet implements WalletInterface {
   getParticipant(): Promise<Participant> {
@@ -120,7 +143,10 @@ export class MockWallet implements WalletInterface {
     outbox: Pick<StateChannelsNotification, "method" | "params">[];
     channelResult: ChannelResult;
   }> {
-    throw new Error("Method not implemented.");
+    return Promise.resolve({
+      channelResult: mockChannelResult({ channelId: args.channelId }),
+      outbox: [],
+    });
   }
   updateChannelFunding(args: UpdateChannelFundingParams): void {
     throw new Error("Method not implemented.");
@@ -131,7 +157,21 @@ export class MockWallet implements WalletInterface {
     outbox: Pick<StateChannelsNotification, "method" | "params">[];
     channelResults: ChannelResult[];
   }> {
-    throw new Error("Method not implemented.");
+    const stateChannelIds =
+      m.signedStates?.map((signedState) => calculateChannelId(signedState)) ??
+      [];
+    // TODO: generate channelIds from objectives
+    const objectiveChannelIds: Bytes32[] = [];
+    // TODO: why is this concat?
+    const allChannelIds = stateChannelIds.concat(objectiveChannelIds);
+    const outbox =
+      m.objectives?.map((objective) => {
+        return mockOutgoing({ method: getMethodFromObjective(objective) });
+      }) ?? [];
+    const channelResults = allChannelIds.map((channelId) => {
+      return mockChannelResult({ channelId });
+    });
+    return Promise.resolve({ outbox, channelResults });
   }
   onNotification(
     cb: (notice: StateChannelsNotification) => void

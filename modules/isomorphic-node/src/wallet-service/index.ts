@@ -135,7 +135,7 @@ export class WalletService implements IWalletService {
 
     const reply = await this.messageReceiverAndExpectReply(
       receiver.participantId,
-      ((params as WireMessage).data as unknown) as Message // fix types
+      (params as WireMessage) as Message // FIXME: inconsistent with server-wallet e2e test
     );
     await this.wallet.pushMessage(reply);
 
