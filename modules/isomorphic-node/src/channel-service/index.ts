@@ -62,7 +62,7 @@ type GetVersionResult = {
 
 // FIXME: should be imported from `@statechannels/server-wallet` when
 // the JSON RPC API there is finalized
-export interface WalletInterface {
+export interface ChannelWalletInterface {
   createChannel(args: CreateChannelParams): SingleChannelResult;
   joinChannel(args: JoinChannelParams): SingleChannelResult;
   updateChannel(args: UpdateChannelParams): SingleChannelResult;
@@ -71,8 +71,10 @@ export interface WalletInterface {
   challengeChannel(args: ChallengeChannelParams): SingleChannelResult;
   getChannels(args: GetChannelsParams): MultipleChannelResult;
   getState(args: GetStateParams): SingleChannelResult;
-  getParticipantInformation(args: GetParticipantParams): GetParticipantResult;
-  getVersion(): GetVersionResult;
+  getParticipantInformation(
+    args: GetParticipantParams
+  ): Promise<GetParticipantResult>;
+  getVersion(): Promise<GetVersionResult>;
   pushMessage(args: PushMessageParams): MultipleChannelResult;
   onNotification(
     cb: (notice: StateChannelsNotification) => void
@@ -106,7 +108,9 @@ export interface IChannelService {
     channelResult: ChannelResult;
   }>;
   // Wraps rpc close + defund calls
-  withdrawFromChannel(args: DefundChannelParams): Promise<{
+  withdrawFromChannel(
+    args: DefundChannelParams
+  ): Promise<{
     channelResult: ChannelResult;
   }>;
   challengeChannel(
@@ -124,9 +128,7 @@ export interface IChannelService {
   ): Promise<{
     channelResult: ChannelResult;
   }>;
-  getParticipant(
-    args: GetParticipantParams
-  ): Promise<GetParticipantResult>;
+  getParticipant(args: GetParticipantParams): Promise<GetParticipantResult>;
   getVersion(): Promise<GetVersionResult>;
 }
 
@@ -137,7 +139,8 @@ const getSubjectFromPublicId = (publicId: string, nodeId: string): string => {
 @singleton()
 export class ChannelService implements IChannelService {
   constructor(
-    @inject(INJECTION_TOKEN.WALLET) private readonly wallet: WalletInterface,
+    @inject(INJECTION_TOKEN.WALLET)
+    private readonly channelWallet: ChannelWalletInterface,
     @inject(INJECTION_TOKEN.MESSAGING_SERVICE)
     private readonly messagingService: IMessagingService,
     private readonly configService: ConfigService
@@ -160,7 +163,7 @@ export class ChannelService implements IChannelService {
     const {
       outbox: [{ params }],
       channelResult: { channelId },
-    } = await this.wallet.createChannel({
+    } = await this.channelWallet.createChannel({
       appData: "0x",
       appDefinition: constants.AddressZero,
       fundingStrategy: "Direct", // TODO
@@ -186,9 +189,9 @@ export class ChannelService implements IChannelService {
       receiver.participantId,
       (params as WireMessage) as Message // FIXME: inconsistent with server-wallet e2e test
     );
-    await this.wallet.pushMessage(reply);
+    await this.channelWallet.pushMessage(reply);
 
-    const { channelResult } = await this.wallet.getState({ channelId });
+    const { channelResult } = await this.channelWallet.getState({ channelId });
 
     return { channelResult };
   }
@@ -251,9 +254,7 @@ export class ChannelService implements IChannelService {
     throw new Error("Method not implemented.");
   }
 
-  getParticipant(
-    args: GetParticipantParams
-  ): Promise<GetParticipantResult> {
+  getParticipant(args: GetParticipantParams): Promise<GetParticipantResult> {
     throw new Error("Method not implemented.");
   }
   getVersion(): Promise<GetVersionResult> {
