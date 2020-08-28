@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { container } from "tsyringe";
 
-import { WalletService } from "./wallet-service";
+import { ChannelService } from "./channel-service";
 
-const walletService = container.resolve(WalletService);
+const channelService = container.resolve(ChannelService);

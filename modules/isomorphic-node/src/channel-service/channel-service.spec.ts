@@ -11,20 +11,20 @@ import {
   MockConfigService,
   MockWallet,
 } from "../test";
-import { WalletService } from ".";
+import { ChannelService } from ".";
 import { INJECTION_TOKEN } from "../constants";
 import { ConfigService } from "../config";
 import { constants } from "ethers";
 
 describe("WalletService", () => {
-  let walletService: WalletService;
+  let walletService: ChannelService;
   beforeEach(() => {
     container.register(INJECTION_TOKEN.MESSAGING_SERVICE, {
       useClass: MockMessagingService,
     });
     container.register(INJECTION_TOKEN.WALLET, { useValue: new MockWallet() });
     container.register(ConfigService, { useClass: MockConfigService });
-    walletService = container.resolve(WalletService);
+    walletService = container.resolve(ChannelService);
   });
 
   afterEach(() => {

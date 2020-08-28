@@ -1,5 +1,5 @@
 import { registry, singleton, inject } from "tsyringe";
-import { Wallet } from "@statechannels/server-wallet";
+import { Wallet as ChannelWallet } from "@statechannels/server-wallet";
 import {
   JoinChannelParams,
   UpdateChannelParams,
@@ -79,7 +79,7 @@ export interface WalletInterface {
   ): { unsubscribe: () => void };
 }
 
-export interface IWalletService {
+export interface IChannelService {
   createChannel(
     receiver: Participant
   ): Promise<{
@@ -135,7 +135,7 @@ const getSubjectFromPublicId = (publicId: string, nodeId: string): string => {
 };
 
 @singleton()
-export class WalletService implements IWalletService {
+export class ChannelService implements IChannelService {
   constructor(
     @inject(INJECTION_TOKEN.WALLET) private readonly wallet: WalletInterface,
     @inject(INJECTION_TOKEN.MESSAGING_SERVICE)
@@ -278,8 +278,8 @@ export class WalletService implements IWalletService {
     token: INJECTION_TOKEN.WALLET,
     useFactory: (dependencyContainer) => {
       // TODO: inject config into wallet
-      return new Wallet();
+      return new ChannelWallet();
     },
   },
 ])
-export class WalletProvider {}
+export class ChannelProvider {}
