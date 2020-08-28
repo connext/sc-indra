@@ -1,6 +1,5 @@
 import { registry, singleton, inject } from "tsyringe";
 import { Wallet } from "@statechannels/server-wallet";
-import { WalletInterface } from "@statechannels/server-wallet";
 import {
   JoinChannelParams,
   UpdateChannelParams,
@@ -9,9 +8,15 @@ import {
   ChannelResult,
   ChannelId,
   Address,
+  CreateChannelParams,
+  Uint256,
+  ChallengeChannelParams,
+  ChannelStatus,
+  PushMessageParams,
+  StateChannelsNotification,
+  Message,
 } from "@statechannels/client-api-schema";
 import {
-  Message,
   Participant,
   makeDestination,
   Destination,
@@ -23,24 +28,63 @@ import { constants, BigNumber } from "ethers";
 import { INJECTION_TOKEN } from "../constants";
 import { ConfigService } from "../config";
 
+// FIXME: should be imported from `@statechannels/server-wallet` when
+// the JSON RPC API there is finalized
+type Outgoing = Omit<StateChannelsNotification, "jsonrpc">;
+type SingleChannelResult = Promise<{
+  outbox: Outgoing[];
+  channelResult: ChannelResult;
+}>;
+type MultipleChannelResult = Promise<{
+  outbox: Outgoing[];
+  channelResults: ChannelResult[];
+}>;
+
 type DefundChannelParams = {
   channelId: ChannelId;
-};
-type WithdrawParams = {
-  channelId: ChannelId;
   destination: Address;
-};
-type ChallengeChannelParams = {
-  channelId: ChannelId;
-};
-type GetWalletInformationResult = {
-  signingAddress: Address;
-  destinationAddress: Address;
-  walletVersion: string;
+  amount: Uint256;
 };
 
+type GetChannelsParams = Partial<
+  Omit<ChannelResult, "status"> & { status: ChannelStatus[] }
+>;
+type GetParticipantParams = { channelId: ChannelId };
+
+type GetParticipantResult = {
+  signingAddress: Address;
+  destinationAddress: Address;
+  ethereumEnabled: boolean;
+};
+type GetVersionResult = {
+  walletVersion: number;
+};
+
+// FIXME: should be imported from `@statechannels/server-wallet` when
+// the JSON RPC API there is finalized
+export interface WalletInterface {
+  createChannel(args: CreateChannelParams): SingleChannelResult;
+  joinChannel(args: JoinChannelParams): SingleChannelResult;
+  updateChannel(args: UpdateChannelParams): SingleChannelResult;
+  closeChannel(args: CloseChannelParams): SingleChannelResult;
+  defundChannel(args: DefundChannelParams): SingleChannelResult;
+  challengeChannel(args: ChallengeChannelParams): SingleChannelResult;
+  getChannels(args: GetChannelsParams): MultipleChannelResult;
+  getState(args: GetStateParams): SingleChannelResult;
+  getParticipantInformation(args: GetParticipantParams): GetParticipantResult;
+  getVersion(): GetVersionResult;
+  pushMessage(args: PushMessageParams): MultipleChannelResult;
+  onNotification(
+    cb: (notice: StateChannelsNotification) => void
+  ): { unsubscribe: () => void };
+}
+
 export interface IWalletService {
-  createChannel(receiver: Participant): Promise<ChannelResult>;
+  createChannel(
+    receiver: Participant
+  ): Promise<{
+    channelResult: ChannelResult;
+  }>;
   joinChannel(
     args: JoinChannelParams
   ): Promise<{
@@ -61,9 +105,8 @@ export interface IWalletService {
   ): Promise<{
     channelResult: ChannelResult;
   }>;
-  withdraw(
-    args: WithdrawParams
-  ): Promise<{
+  // Wraps rpc close + defund calls
+  withdrawFromChannel(args: DefundChannelParams): Promise<{
     channelResult: ChannelResult;
   }>;
   challengeChannel(
@@ -71,7 +114,9 @@ export interface IWalletService {
   ): Promise<{
     channelResult: ChannelResult;
   }>;
-  getChannels(): Promise<{
+  getChannels(
+    queryObject: GetChannelsParams
+  ): Promise<{
     channelResults: ChannelResult[];
   }>;
   getState(
@@ -79,14 +124,16 @@ export interface IWalletService {
   ): Promise<{
     channelResult: ChannelResult;
   }>;
-  getWalletInformation(): Promise<GetWalletInformationResult>;
+  getParticipant(
+    args: GetParticipantParams
+  ): Promise<GetParticipantResult>;
+  getVersion(): Promise<GetVersionResult>;
 }
 
 const getSubjectFromPublicId = (publicId: string, nodeId: string): string => {
   return `${nodeId}.${publicId}`;
 };
 
-// TODO: replace calls to wallet with JSON-RPC calls
 @singleton()
 export class WalletService implements IWalletService {
   constructor(
@@ -107,7 +154,9 @@ export class WalletService implements IWalletService {
     };
   }
 
-  async createChannel(receiver: Participant): Promise<ChannelResult> {
+  async createChannel(
+    receiver: Participant
+  ): Promise<{ channelResult: ChannelResult }> {
     const {
       outbox: [{ params }],
       channelResult: { channelId },
@@ -141,7 +190,7 @@ export class WalletService implements IWalletService {
 
     const { channelResult } = await this.wallet.getState({ channelId });
 
-    return channelResult;
+    return { channelResult };
   }
 
   joinChannel(
@@ -151,6 +200,7 @@ export class WalletService implements IWalletService {
   }> {
     throw new Error("Method not implemented.");
   }
+
   updateChannel(
     args: UpdateChannelParams
   ): Promise<{
@@ -158,6 +208,7 @@ export class WalletService implements IWalletService {
   }> {
     throw new Error("Method not implemented.");
   }
+
   closeChannel(
     args: CloseChannelParams
   ): Promise<{
@@ -165,11 +216,33 @@ export class WalletService implements IWalletService {
   }> {
     throw new Error("Method not implemented.");
   }
-  getChannels(): Promise<{
+
+  defundChannel(
+    args: DefundChannelParams
+  ): Promise<{ channelResult: ChannelResult }> {
+    throw new Error("Method not implemented.");
+  }
+
+  withdrawFromChannel(
+    args: DefundChannelParams
+  ): Promise<{ channelResult: ChannelResult }> {
+    throw new Error("Method not implemented.");
+  }
+
+  challengeChannel(
+    args: ChallengeChannelParams
+  ): Promise<{ channelResult: ChannelResult }> {
+    throw new Error("Method not implemented.");
+  }
+
+  getChannels(
+    args: GetChannelsParams
+  ): Promise<{
     channelResults: ChannelResult[];
   }> {
     throw new Error("Method not implemented.");
   }
+
   getState(
     args: GetStateParams
   ): Promise<{
@@ -177,20 +250,13 @@ export class WalletService implements IWalletService {
   }> {
     throw new Error("Method not implemented.");
   }
-  defundChannel(
-    args: DefundChannelParams
-  ): Promise<{ channelResult: ChannelResult }> {
+
+  getParticipant(
+    args: GetParticipantParams
+  ): Promise<GetParticipantResult> {
     throw new Error("Method not implemented.");
   }
-  withdraw(args: WithdrawParams): Promise<{ channelResult: ChannelResult }> {
-    throw new Error("Method not implemented.");
-  }
-  challengeChannel(
-    args: ChallengeChannelParams
-  ): Promise<{ channelResult: ChannelResult }> {
-    throw new Error("Method not implemented.");
-  }
-  getWalletInformation(): Promise<GetWalletInformationResult> {
+  getVersion(): Promise<GetVersionResult> {
     throw new Error("Method not implemented.");
   }
 
