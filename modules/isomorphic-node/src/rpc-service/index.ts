@@ -1,105 +1,36 @@
 import { registry, singleton, inject } from "tsyringe";
-import { Wallet as ChannelWallet } from "@statechannels/server-wallet"
+import { Wallet as ChannelWallet } from "@statechannels/server-wallet";
 import {
   JoinChannelParams,
   UpdateChannelParams,
   CloseChannelParams,
   GetStateParams,
-  ChannelResult,
-  ChannelId,
-  Address,
   CreateChannelParams,
-  Uint256,
   ChallengeChannelParams,
-  ChannelStatus,
   PushMessageParams,
-  StateChannelsNotification,
-  JsonRpcRequest,
-  JsonRpcResponse,
   JsonRpcErrorResponse,
   StateChannelsRequest,
   StateChannelsError,
   StateChannelsResponse,
-  StateChannelsErrorResponse,
   isJsonRpcErrorResponse,
   isJsonRpcResponse,
 } from "@statechannels/client-api-schema";
 import { INJECTION_TOKEN } from "../constants";
 import { safeJsonStringify } from "../utils";
-// FIXME: should be imported from `@statechannels/server-wallet` when
-// the JSON RPC API there is finalized (pushMessage return ret)
-type Outgoing = Omit<StateChannelsNotification, "jsonrpc">;
-type SingleChannelResult = Promise<{
-  outbox: Outgoing[];
-  channelResult: ChannelResult;
-}>;
-type MultipleChannelResult = Promise<{
-  outbox: Outgoing[];
-  channelResults: ChannelResult[];
-}>;
+import {
+  SingleChannelResult,
+  MultipleChannelResult,
+  GetParticipantResult,
+  GetVersionResult,
+  DefundChannelParams,
+  GetParticipantParams,
+  RpcServiceInterface,
+  ChannelWalletInterface,
+  StateChannelsMethod,
+  GetChannelsParams,
+} from "../types";
 
-type DefundChannelParams = {
-  channelId: ChannelId;
-  destination: Address;
-  amount: Uint256;
-};
-
-type GetChannelsParams = Partial<
-  Omit<ChannelResult, "status"> & { status: ChannelStatus[] }
->;
-type GetParticipantParams = { channelId: ChannelId };
-
-type GetParticipantResult = {
-  signingAddress: Address;
-  destinationAddress: Address;
-  ethereumEnabled: boolean;
-};
-type GetVersionResult = {
-  walletVersion: number;
-};
-
-// TODO: Should this import from the @statechannels api as well? Must
-// decide when communication at rpc layer is defined on that side
-export interface RpcServiceInterface {
-  createChannel(params: CreateChannelParams): SingleChannelResult;
-  joinChannel(params: JoinChannelParams): SingleChannelResult;
-  updateChannel(params: UpdateChannelParams): SingleChannelResult;
-  closeChannel(params: CloseChannelParams): SingleChannelResult;
-  defundChannel(params: DefundChannelParams): SingleChannelResult;
-  challengeChannel(params: ChallengeChannelParams): SingleChannelResult;
-  getChannels(params: GetChannelsParams): MultipleChannelResult;
-  getState(params: GetStateParams): SingleChannelResult;
-  getParticipant(params: GetParticipantParams): Promise<GetParticipantResult>;
-  getVersion(): Promise<GetVersionResult>;
-  pushMessage(params: PushMessageParams): MultipleChannelResult;
-}
-
-// TODO: How will the wallet expose rpc request dispatching?
-interface ChannelWalletInterface {
-  dispatch(
-    request: JsonRpcRequest
-  ): Promise<JsonRpcResponse | JsonRpcErrorResponse>;
-}
-
-// FIXME: This should be defined within client-api-schema
-// define all valid rpc method names
-const StateChannelsMethods = {
-  CreateChannel: "CreateChannel",
-  JoinChannel: "JoinChannel",
-  UpdateChannel: "UpdateChannel",
-  CloseChannel: "CloseChannel",
-  DefundChannel: "DefundChannel",
-  ChallengeChannel: "ChallengeChannel",
-  GetChannels: "GetChannels",
-  GetState: "GetState",
-  GetParticipant: "GetParticipant",
-  GetVersion: "GetVersion",
-  PushMessage: "PushMessage",
-};
-type StateChannelsMethod = keyof typeof StateChannelsMethods;
-
-// FIXME: This should be defined within client-api-schema
-// define all valid rpc return results
+// Define all valid rpc return results
 interface StateChannelsResultsMap {
   ["CreateChannel"]: SingleChannelResult;
   ["JoinChannel"]: SingleChannelResult;
