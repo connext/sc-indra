@@ -61,10 +61,7 @@ export class MockChannelWallet implements ChannelWalletInterface {
       const cb = this.stubs.get("JoinChannel");
       return cb(params);
     }
-    const existing = this.channels.get(params.channelId);
-    if (!existing) {
-      throw new Error("Channel not found");
-    }
+    const existing = this.getChannelOrThrow(params.channelId)
     const updated = mockChannelResult({
       ...this.channels.get(params.channelId),
       status: "opening",
@@ -76,28 +73,58 @@ export class MockChannelWallet implements ChannelWalletInterface {
       // FIXME: allign methods with rpc intercaes
       method: "ChannelUpdated",
     });
-    throw new Error("Mock not implemented");
+    return Promise.resolve({ channelResult: updated, outbox: [outbox] });
   }
   updateChannel(params: UpdateChannelParams): SingleChannelResult {
     if (this.stubs.has("UpdateChannel")) {
       const cb = this.stubs.get("UpdateChannel");
       return cb(params);
     }
-    throw new Error("Mock not implemented");
+    const existing = this.getChannelOrThrow(params.channelId);
+    const updated = mockChannelResult({
+      ...existing,
+      turnNum: existing.turnNum + 1,
+      status: "running",
+    });
+    const outbox = mockOutgoing({
+      params: updated,
+      method: "ChannelUpdated",
+    });
+    return Promise.resolve({ channelResult: updated, outbox: [outbox] });
   }
   closeChannel(params: CloseChannelParams): SingleChannelResult {
     if (this.stubs.has("CloseChannel")) {
       const cb = this.stubs.get("CloseChannel");
       return cb(params);
     }
-    throw new Error("Mock not implemented");
+    const existing = this.getChannelOrThrow(params.channelId);
+    const updated = mockChannelResult({
+      ...existing,
+      turnNum: existing.turnNum + 1,
+      status: "closing",
+    });
+    const outbox = mockOutgoing({
+      params: updated,
+      method: "ChannelClosed",
+    });
+    return Promise.resolve({ channelResult: updated, outbox: [outbox] });
   }
   defundChannel(params: DefundChannelParams): SingleChannelResult {
     if (this.stubs.has("DefundChannel")) {
       const cb = this.stubs.get("DefundChannel");
       return cb(params);
     }
-    throw new Error("Mock not implemented");
+    const existing = this.getChannelOrThrow(params.channelId);
+    const updated = mockChannelResult({
+      ...existing,
+      turnNum: existing.turnNum + 1,
+      status: "closed",
+    });
+    const outbox = mockOutgoing({
+      params: updated,
+      method: "BudgetUpdated",
+    });
+    return Promise.resolve({ channelResult: updated, outbox: [outbox] });
   }
   challengeChannel(params: ChallengeChannelParams): SingleChannelResult {
     if (this.stubs.has("ChallengeChannel")) {
@@ -129,13 +156,13 @@ export class MockChannelWallet implements ChannelWalletInterface {
     }
     const channel = this.channels.get(params.channelId);
     if (!channel) {
-      throw new Error("Could not find channel")
+      throw new Error("Could not find channel");
     }
     return Promise.resolve({
       signingAddress: channel.participants[0].signingAddress,
       destinationAddress: channel.participants[0].destination,
       ethereumEnabled: false,
-    })
+    });
   }
   getVersion(): Promise<GetVersionResult> {
     if (this.stubs.has("GetVersion")) {
@@ -221,5 +248,12 @@ export class MockChannelWallet implements ChannelWalletInterface {
         error: e.message,
       };
     }
+  }
+
+  private getChannelOrThrow(channelId: string): ChannelResult {
+    if (!this.channels.has(channelId)) {
+      throw new Error(`No channel found for ${channelId}`)
+    }
+    return this.channels.get(channelId)!;
   }
 }
