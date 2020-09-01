@@ -22,8 +22,10 @@ export type WithdrawParams = DepositParams;
 export interface IMessageRouter {
   createChannel(
     counterparty: Participant
-  ): Completed<ChannelResult> & ChannelResult;
-  deposit(params: DepositParams): Completed<ChannelResult> & { txHash: string };
-  updateChannel(params: UpdateChannelParams): ChannelResult;
-  withdraw(params: WithdrawParams): ChannelResult & { txHash: string };
+  ): Promise<Completed<ChannelResult> & ChannelResult>;
+  deposit(
+    params: DepositParams
+  ): Promise<Completed<ChannelResult> & { txHash: string }>;
+  updateChannel(params: UpdateChannelParams): Promise<ChannelResult>;
+  withdraw(params: WithdrawParams): Promise<ChannelResult & { txHash: string }>;
 }

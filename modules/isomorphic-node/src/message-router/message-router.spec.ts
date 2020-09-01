@@ -11,20 +11,22 @@ import {
   MockConfigService,
   MockWallet,
 } from "../test";
-import { ChannelService } from ".";
+import { MessageRouter } from ".";
 import { INJECTION_TOKEN } from "../constants";
 import { ConfigService } from "../config";
 import { constants } from "ethers";
 
-describe("WalletService", () => {
-  let walletService: ChannelService;
+describe("MessageRouter", () => {
+  let messageRouter: MessageRouter;
   beforeEach(() => {
     container.register(INJECTION_TOKEN.MESSAGING_SERVICE, {
       useClass: MockMessagingService,
     });
-    container.register(INJECTION_TOKEN.WALLET, { useValue: new MockWallet() });
+    container.register(INJECTION_TOKEN.CHANNEL_WALLET, {
+      useValue: new MockWallet(),
+    });
     container.register(ConfigService, { useClass: MockConfigService });
-    walletService = container.resolve(ChannelService);
+    messageRouter = container.resolve(MessageRouter);
   });
 
   afterEach(() => {
@@ -37,7 +39,7 @@ describe("WalletService", () => {
       participantId: mkPublicIdentifier("indratest"),
       signingAddress: mkAddress("0xbad"),
     };
-    const result = await walletService.createChannel(testParticipant);
+    const result = await messageRouter.createChannel(testParticipant);
     expect(result.allocations.length).to.be.eq(1);
     expect(result.allocations[0].allocationItems.length).to.be.eq(2);
     expect(result.allocations[0].token).to.be.eq(constants.AddressZero);
