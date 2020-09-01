@@ -3,6 +3,7 @@ import { ChannelResult, StateChannelsNotification } from "@statechannels/client-
 import { mkAddress, mkPublicIdentifier, mkBytes32 } from ".";
 import { constants, BigNumber } from "ethers";
 import { Objective } from "@statechannels/wallet-core";
+import { StateChannelsMethod, StateChannelsParameters } from "../types";
 
 export const mockChannelResult = (
   overrides: Partial<ChannelResult> = {}
@@ -44,6 +45,10 @@ export const mockChannelResult = (
     ...overrides,
   };
 };
+
+export function mockRpcParams<T extends StateChannelsMethod>(method: T): StateChannelsParameters[T] {
+  throw new Error("Must implement mock rpc params")
+}
 
 export const mockOutgoing = (overrides: Partial<Outgoing> = {}): Outgoing => {
   return {
