@@ -9,7 +9,7 @@ import {
   mkPublicIdentifier,
   MockMessagingService,
   MockConfigService,
-  MockWallet,
+  MockChannelWallet,
 } from "../test";
 import { MessageRouter } from ".";
 import { INJECTION_TOKEN } from "../constants";
@@ -23,7 +23,7 @@ describe("MessageRouter", () => {
       useClass: MockMessagingService,
     });
     container.register(INJECTION_TOKEN.CHANNEL_WALLET, {
-      useValue: new MockWallet(),
+      useValue: new MockChannelWallet(),
     });
     container.register(ConfigService, { useClass: MockConfigService });
     messageRouter = container.resolve(MessageRouter);

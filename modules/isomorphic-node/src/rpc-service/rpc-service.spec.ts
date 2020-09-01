@@ -39,7 +39,7 @@ describe("RpcService", () => {
       mockedWallet.addStub(nonCamelCased as StateChannelsMethod, (params) =>
         Promise.reject(`Fail`)
       );
-      await expect(rpcService[serviceMethod](params)).to.be.rejectedWith(
+      await expect(rpcService[serviceMethod](params)).should.be.rejectedWith(
         `Fail`
       );
     });

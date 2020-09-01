@@ -1,7 +1,8 @@
 import { use } from "chai";
+import * as promised from "chai-as-promised";
+import * as subset from "chai-subset";
 
-use(require("chai-as-promised"));
-use(require("chai-subset"));
+use(promised);
+use(subset);
 
 export { expect } from "chai";
-
