@@ -2,30 +2,17 @@ import { container } from "tsyringe";
 
 import { RpcService } from ".";
 import { INJECTION_TOKEN } from "../constants";
+import { StateChannelsMethods, StateChannelsMethod } from "../types";
 import { MockChannelWallet } from "../test/mocks/mockChannelWallet";
-import {
-  StateChannelsMethods,
-  StateChannelsMethod,
-  StateChannelsResults,
-  StateChannelsParameters,
-} from "../types";
-import { mockRpcParams } from "../test/channel";
-
-// Unit test helper function
-function verifyServiceResponse<P extends StateChannelsMethod>(
-  response: StateChannelsResults[P],
-  method: P,
-  params: StateChannelsParameters[P]
-): void {
-  throw new Error("Method not implemented")
-};
+import { mockRpcParams, expect } from "../test";
 
 describe("RpcService", () => {
   let rpcService: RpcService;
+  let mockedWallet = new MockChannelWallet();
 
   beforeEach(() => {
     container.register(INJECTION_TOKEN.CHANNEL_WALLET, {
-      useValue: new MockChannelWallet(),
+      useValue: mockedWallet,
     });
     rpcService = container.resolve(RpcService);
   });
@@ -35,12 +22,26 @@ describe("RpcService", () => {
   });
 
   for (const nonCamelCased of Object.keys(StateChannelsMethods)) {
+    const serviceMethod =
+      nonCamelCased.substr(0, 1).toLowerCase() + nonCamelCased.substr(1);
+    const params = mockRpcParams(nonCamelCased as StateChannelsMethod);
+
     it(`should correctly call the ${nonCamelCased} method`, async () => {
-      const serviceMethod =
-        nonCamelCased.substr(0, 1).toLowerCase() + nonCamelCased.substr(1);
-      const params = mockRpcParams(nonCamelCased as StateChannelsMethod);
+      mockedWallet.addStub(
+        nonCamelCased as StateChannelsMethod,
+        (params) => params
+      );
       const response = await rpcService[serviceMethod](params);
-      verifyServiceResponse(response, nonCamelCased as StateChannelsMethod, params);
+      expect(response).to.be.deep.eq(params);
+    });
+
+    it(`should correctly throw from the ${nonCamelCased} method`, async () => {
+      mockedWallet.addStub(nonCamelCased as StateChannelsMethod, (params) =>
+        Promise.reject(`Fail`)
+      );
+      await expect(rpcService[serviceMethod](params)).to.be.rejectedWith(
+        `Fail`
+      );
     });
   }
 });
