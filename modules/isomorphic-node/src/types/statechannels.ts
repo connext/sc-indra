@@ -47,7 +47,7 @@ export type GetParticipantResult = {
   ethereumEnabled: boolean;
 };
 export type GetVersionResult = {
-  walletVersion: number;
+  walletVersion: string;
 };
 
 // TODO: Should this import from the @statechannels api as well? Must
@@ -60,7 +60,7 @@ export interface RpcServiceInterface {
   defundChannel(params: DefundChannelParams): SingleChannelResult;
   challengeChannel(params: ChallengeChannelParams): SingleChannelResult;
   getChannels(params: GetChannelsParams): MultipleChannelResult;
-  getState(params: GetStateParams): SingleChannelResult;
+  getChannel(params: GetStateParams): SingleChannelResult;
   getParticipant(params: GetParticipantParams): Promise<GetParticipantResult>;
   getVersion(): Promise<GetVersionResult>;
   pushMessage(params: PushMessageParams): MultipleChannelResult;
@@ -83,7 +83,7 @@ export const StateChannelsMethods = {
   DefundChannel: "DefundChannel",
   ChallengeChannel: "ChallengeChannel",
   GetChannels: "GetChannels",
-  GetState: "GetState",
+  GetChannel: "GetChannel",
   GetParticipant: "GetParticipant",
   GetVersion: "GetVersion",
   PushMessage: "PushMessage",

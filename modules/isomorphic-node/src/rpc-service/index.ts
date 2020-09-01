@@ -4,7 +4,7 @@ import {
   JoinChannelParams,
   UpdateChannelParams,
   CloseChannelParams,
-  GetStateParams,
+  GetStateParams as GetChannelParams,
   CreateChannelParams,
   ChallengeChannelParams,
   PushMessageParams,
@@ -39,7 +39,7 @@ interface StateChannelsResultsMap {
   ["DefundChannel"]: SingleChannelResult;
   ["ChallengeChannel"]: SingleChannelResult;
   ["GetChannels"]: MultipleChannelResult;
-  ["GetState"]: SingleChannelResult;
+  ["GetChannel"]: SingleChannelResult;
   ["GetParticipant"]: GetParticipantResult;
   ["GetVersion"]: GetVersionResult;
   ["PushMessage"]: MultipleChannelResult;
@@ -57,7 +57,7 @@ interface StateChannelsParametersMap {
   ["DefundChannel"]: DefundChannelParams;
   ["ChallengeChannel"]: ChallengeChannelParams;
   ["GetChannels"]: GetChannelsParams;
-  ["GetState"]: GetStateParams;
+  ["GetChannel"]: GetChannelParams;
   ["GetParticipant"]: GetParticipantParams;
   ["GetVersion"]: {};
   ["PushMessage"]: PushMessageParams;
@@ -105,8 +105,8 @@ export class RpcService implements RpcServiceInterface {
   public async getChannels(params: GetChannelsParams): MultipleChannelResult {
     return this.sendRpcRequest("GetChannels", params);
   }
-  public async getState(params: GetStateParams): SingleChannelResult {
-    return this.sendRpcRequest("GetState", params);
+  public async getChannel(params: GetChannelParams): SingleChannelResult {
+    return this.sendRpcRequest("GetChannel", params);
   }
   public async getParticipant(
     params: GetParticipantParams
@@ -146,7 +146,7 @@ export class RpcService implements RpcServiceInterface {
     }
 
     throw new Error(
-      `Unable to determine if this is json rpc result or json rpc error: ${safeJsonStringify(
+      `Unable to determine if this is json rpc result or error: ${safeJsonStringify(
         response
       )}`
     );
