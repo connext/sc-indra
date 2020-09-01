@@ -1,4 +1,4 @@
-import { IConfigService } from "../../config";
+import { IConfigService } from "../../types";
 import { mkBytes32, mkPublicIdentifier, mkAddress } from "../utils";
 
 export class MockConfigService implements IConfigService {
