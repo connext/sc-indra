@@ -28,43 +28,9 @@ import {
   ChannelWalletInterface,
   StateChannelsMethod,
   GetChannelsParams,
+  StateChannelsParameters,
+  StateChannelsResults,
 } from "../types";
-
-// Define all valid rpc return results
-interface StateChannelsResultsMap {
-  ["CreateChannel"]: SingleChannelResult;
-  ["JoinChannel"]: SingleChannelResult;
-  ["UpdateChannel"]: SingleChannelResult;
-  ["CloseChannel"]: SingleChannelResult;
-  ["DefundChannel"]: SingleChannelResult;
-  ["ChallengeChannel"]: SingleChannelResult;
-  ["GetChannels"]: MultipleChannelResult;
-  ["GetChannel"]: SingleChannelResult;
-  ["GetParticipant"]: GetParticipantResult;
-  ["GetVersion"]: GetVersionResult;
-  ["PushMessage"]: MultipleChannelResult;
-}
-type StateChannelsResults = {
-  [P in keyof StateChannelsResultsMap]: StateChannelsResultsMap[P];
-};
-
-// Define a helper type to map method names to parameters
-interface StateChannelsParametersMap {
-  ["CreateChannel"]: CreateChannelParams;
-  ["JoinChannel"]: JoinChannelParams;
-  ["UpdateChannel"]: UpdateChannelParams;
-  ["CloseChannel"]: CloseChannelParams;
-  ["DefundChannel"]: DefundChannelParams;
-  ["ChallengeChannel"]: ChallengeChannelParams;
-  ["GetChannels"]: GetChannelsParams;
-  ["GetChannel"]: GetChannelParams;
-  ["GetParticipant"]: GetParticipantParams;
-  ["GetVersion"]: {};
-  ["PushMessage"]: PushMessageParams;
-}
-type StateChannelsParameters = {
-  [P in keyof StateChannelsParametersMap]: StateChannelsParametersMap[P];
-};
 
 /**
  * This class handles communication between the channel wallet and the
