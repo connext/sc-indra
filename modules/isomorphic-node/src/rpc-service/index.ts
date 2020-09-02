@@ -36,6 +36,8 @@ import {
   IRpcService,
 } from "../types";
 import { JsonRpcResponse } from "@connext/types";
+import { Wallet } from "ethers";
+import { ConfigService } from "../config";
 
 /**
  * This class handles communication between the channel wallet and the
@@ -50,7 +52,7 @@ import { JsonRpcResponse } from "@connext/types";
 export class WalletRpcService implements IRpcService {
   constructor(
     @inject(INJECTION_TOKEN.CHANNEL_WALLET)
-    private readonly channelWallet: IWalletRpcService
+    private readonly channelWallet: WalletInterface
   ) {}
   dispatch(
     request: JsonRpcRequest<string, object>
@@ -58,8 +60,10 @@ export class WalletRpcService implements IRpcService {
     throw new Error("Method not implemented.");
   }
 
+  // TODO: switch to RPC interface
   public async createChannel(params: CreateChannelParams): SingleChannelResult {
-    return this.sendRpcRequest("CreateChannel", params);
+    // return this.sendRpcRequest("CreateChannel", params);
+    return this.channelWallet.createChannel(params);
   }
   public async joinChannel(params: JoinChannelParams): SingleChannelResult {
     return this.sendRpcRequest("JoinChannel", params);
@@ -107,7 +111,8 @@ export class WalletRpcService implements IRpcService {
       method: method as any,
       params,
     };
-    const response = await this.channelWallet.dispatch(request);
+    // const response = await this.channelWallet.dispatch(request);
+    const response = {};
     if (!isJsonRpcErrorResponse(response)) {
       const error = (response as JsonRpcErrorResponse)
         .error as StateChannelsError;
@@ -133,6 +138,30 @@ export class WalletRpcService implements IRpcService {
   {
     token: INJECTION_TOKEN.CHANNEL_WALLET,
     useFactory: (dependencyContainer) => {
+      const config = dependencyContainer.resolve(ConfigService);
+      const providerUrls = config.getChainProviders();
+      const chainId = Object.keys(providerUrls)[0];
+      if (!chainId) {
+        throw new Error(
+          `Expected at least one provider in ${JSON.stringify(providerUrls)}`
+        );
+      }
+      const pk = config.getPrivateKey();
+      process.env.NODE_ENV = "development";
+      // Just FYI: these SERVER_ prefix env vars config the channel wallet's database connection
+      process.env.SERVER_HOST = "database";
+      process.env.SERVER_PORT = "5432";
+      process.env.SERVER_DB_NAME = "indra";
+      process.env.SERVER_DB_USER = "indra";
+      process.env.SERVER_DB_PASSWORD = process.env.INDRA_PG_PASSWORD;
+      process.env.SERVER_SIGNER_PRIVATE_KEY = pk;
+      process.env.SERVER_PRIVATE_KEY = pk;
+      process.env.RPC_ENDPOINT = providerUrls[chainId];
+      process.env.CHAIN_NETWORK_ID = chainId;
+      process.env.ETH_ASSET_HOLDER_ADDRESS = "";
+      process.env.DEBUG_KNEX = "";
+      process.env.SKIP_EVM_VALIDATION = "";
+      process.env.TIMING_METRICS = "";
       // TODO: inject config into channel wallet
       return new ChannelWallet();
     },
