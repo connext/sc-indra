@@ -18,7 +18,6 @@ import {
   GetStateParams as GetChannelParams,
 } from "@statechannels/client-api-schema";
 
-
 // FIXME: should be imported from `@statechannels/server-wallet` when
 // the JSON RPC API there is finalized (pushMessage return ret)
 export type Outgoing = Omit<StateChannelsNotification, "jsonrpc">;
@@ -53,7 +52,7 @@ export type GetVersionResult = {
 
 // TODO: Should this import from the @statechannels api as well? Must
 // decide when communication at rpc layer is defined on that side
-export interface RpcServiceInterface {
+export interface IRpcService {
   createChannel(params: CreateChannelParams): SingleChannelResult;
   joinChannel(params: JoinChannelParams): SingleChannelResult;
   updateChannel(params: UpdateChannelParams): SingleChannelResult;
@@ -68,7 +67,7 @@ export interface RpcServiceInterface {
 }
 
 // TODO: How will the wallet expose rpc request dispatching?
-export interface ChannelWalletInterface extends RpcServiceInterface {
+export interface IWalletRpcService extends IRpcService {
   dispatch(
     request: JsonRpcRequest
   ): Promise<JsonRpcResponse | JsonRpcErrorResponse>;

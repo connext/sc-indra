@@ -1,5 +1,5 @@
 import {
-  ChannelWalletInterface,
+  IWalletRpcService,
   SingleChannelResult,
   DefundChannelParams,
   MultipleChannelResult,
@@ -24,7 +24,7 @@ import {
   JsonRpcErrorResponse,
 } from "@statechannels/client-api-schema";
 import { mockChannelResult, mockOutgoing } from "../channel";
-export class MockChannelWallet implements ChannelWalletInterface {
+export class MockChannelWallet implements IWalletRpcService {
   constructor(
     private readonly channels: Map<Bytes32, ChannelResult> = new Map(),
     private readonly stubs: Map<StateChannelsMethod, Function> = new Map()

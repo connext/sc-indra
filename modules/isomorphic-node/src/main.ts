@@ -3,7 +3,7 @@ import "reflect-metadata";
 import { container } from "tsyringe";
 import { Wallet, providers } from "ethers";
 
-import { RpcService } from "./rpc-service";
+import { WalletRpcService } from "./rpc-service";
 
 console.log(`Good morning!`);
 
@@ -13,11 +13,12 @@ const privateKey = Wallet.fromMnemonic(process.env.INDRA_MNEMONIC!).privateKey;
 
 (async () => {
   try {
-
     const providerUrls = JSON.parse(process.env.INDRA_CHAIN_PROVIDERS || "{}");
     const chainId = Object.keys(providerUrls)[0];
     if (!chainId) {
-      throw new Error(`Expected at least one provider in ${JSON.stringify(providerUrls)}`);
+      throw new Error(
+        `Expected at least one provider in ${JSON.stringify(providerUrls)}`
+      );
     }
     const provider = new providers.JsonRpcProvider(providerUrls[chainId]);
 
@@ -43,9 +44,8 @@ const privateKey = Wallet.fromMnemonic(process.env.INDRA_MNEMONIC!).privateKey;
 
     const participants = wallet.getParticipant();
     console.log(`Wallet has participants: ${JSON.stringify(participants)}`);
-
   } catch (e) {
     console.log(e.stack);
     process.exit(1);
   }
-})()
+})();

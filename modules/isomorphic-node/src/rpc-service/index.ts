@@ -1,5 +1,8 @@
 import { registry, singleton, inject } from "tsyringe";
-import { Wallet as ChannelWallet } from "@statechannels/server-wallet";
+import {
+  Wallet as ChannelWallet,
+  WalletInterface,
+} from "@statechannels/server-wallet";
 import {
   JoinChannelParams,
   UpdateChannelParams,
@@ -14,6 +17,7 @@ import {
   StateChannelsResponse,
   isJsonRpcErrorResponse,
   isJsonRpcResponse,
+  JsonRpcRequest,
 } from "@statechannels/client-api-schema";
 import { INJECTION_TOKEN } from "../constants";
 import { safeJsonStringify } from "../utils";
@@ -24,13 +28,14 @@ import {
   GetVersionResult,
   DefundChannelParams,
   GetParticipantParams,
-  RpcServiceInterface,
-  ChannelWalletInterface,
+  IWalletRpcService,
   StateChannelsMethod,
   GetChannelsParams,
   StateChannelsParameters,
   StateChannelsResults,
+  IRpcService,
 } from "../types";
+import { JsonRpcResponse } from "@connext/types";
 
 /**
  * This class handles communication between the channel wallet and the
@@ -42,11 +47,16 @@ import {
  * returned or thrown, respectively.
  */
 @singleton()
-export class RpcService implements RpcServiceInterface {
+export class WalletRpcService implements IRpcService {
   constructor(
     @inject(INJECTION_TOKEN.CHANNEL_WALLET)
-    private readonly channelWallet: ChannelWalletInterface
+    private readonly channelWallet: IWalletRpcService
   ) {}
+  dispatch(
+    request: JsonRpcRequest<string, object>
+  ): Promise<JsonRpcResponse | JsonRpcErrorResponse<any>> {
+    throw new Error("Method not implemented.");
+  }
 
   public async createChannel(params: CreateChannelParams): SingleChannelResult {
     return this.sendRpcRequest("CreateChannel", params);
