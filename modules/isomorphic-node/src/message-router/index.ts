@@ -3,12 +3,14 @@ import {
   UpdateChannelParams,
   ChannelResult,
 } from "@statechannels/client-api-schema";
+import { inject, registry } from "tsyringe";
+import { IMessagingService, GenericMessage } from "@connext/types";
+import { makeDestination, Destination } from "@statechannels/wallet-core";
+import { constants, BigNumber } from "ethers";
 
 import { IMessageRouter, DepositParams } from "../types";
 import { WalletRpcService } from "../rpc-service";
-import { inject, registry } from "tsyringe";
 import { INJECTION_TOKEN } from "../constants";
-import { IMessagingService, GenericMessage } from "@connext/types";
 import { ConfigService } from "../config";
 
 export class MessageRouter implements IMessageRouter {
@@ -22,6 +24,18 @@ export class MessageRouter implements IMessageRouter {
     this.INBOX_SUBJECT = `${configService.getPublicIdentifer}.*.channel-inbox`;
   }
 
+  public get destination(): Destination {
+    return makeDestination(this.configService.getSignerAddress());
+  }
+
+  public get me(): Participant {
+    return {
+      signingAddress: this.configService.getSignerAddress(),
+      destination: this.destination,
+      participantId: this.configService.getPublicIdentifer(),
+    };
+  }
+
   async init(): Promise<void> {
     // channel message subscription
     await this.messagingService.subscribe(this.INBOX_SUBJECT, (msg) =>
@@ -29,11 +43,33 @@ export class MessageRouter implements IMessageRouter {
     );
   }
 
-  createChannel(
-    counterparty: Participant
-  ): Promise<{ completed(): Promise<ChannelResult> } & ChannelResult> {
-    throw new Error("Method not implemented.");
-    this.walletRpcService.createChannel({});
+  async createChannel(
+    receiver: Participant
+  ): Promise<{ channelResult: ChannelResult }> {
+    const {
+      outbox: [{ params }],
+      channelResult: { channelId },
+    } = await this.walletRpcService.createChannel({
+      appData: "0x",
+      appDefinition: constants.AddressZero,
+      fundingStrategy: "Direct", // TODO
+      participants: [this.me, receiver],
+      allocations: [
+        {
+          token: constants.AddressZero,
+          allocationItems: [
+            {
+              amount: BigNumber.from(0).toString(),
+              destination: this.destination,
+            },
+            {
+              amount: BigNumber.from(0).toString(),
+              destination: receiver.destination,
+            },
+          ],
+        },
+      ],
+    });
   }
 
   deposit(

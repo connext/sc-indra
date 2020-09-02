@@ -19,15 +19,6 @@ export class ConfigService implements IConfigService {
     config();
   }
 
-  getMyParticipant(): Participant {
-    const signingAddress = this.getSignerAddress();
-    return {
-      participantId: this.getPublicIdentifer(),
-      destination: makeDestination(signingAddress),
-      signingAddress,
-    };
-  }
-
   getMnemonic(): string {
     return this.getOrThrow("INDRA_MNEMONIC");
   }
