@@ -1,27 +1,30 @@
-import {
-  Participant,
-  UpdateChannelParams,
-  ChannelResult,
-} from "@statechannels/client-api-schema";
-import { inject, registry } from "tsyringe";
+import { Participant, UpdateChannelParams, ChannelResult } from "@statechannels/client-api-schema";
 import { IMessagingService, GenericMessage } from "@connext/types";
-import { makeDestination, Destination } from "@statechannels/wallet-core";
+import { makeDestination, Destination, Message } from "@statechannels/wallet-core";
+import { Message as WireMessage } from "@statechannels/wire-format";
 import { constants, BigNumber } from "ethers";
+import { inject, singleton } from "tsyringe";
 
 import { IMessageRouter, DepositParams } from "../types";
 import { WalletRpcService } from "../rpc-service";
 import { INJECTION_TOKEN } from "../constants";
 import { ConfigService } from "../config";
 
+// to.from.subject
+const INBOX_SUBJECT = `channel-inbox`;
+
+const MESSAGE_TIMEOUT = 10_000;
+
+@singleton()
 export class MessageRouter implements IMessageRouter {
   private INBOX_SUBJECT: string;
   constructor(
-    private readonly walletRpcService: WalletRpcService,
+    @inject(INJECTION_TOKEN.WALLET_RPC_SERVICE) private readonly walletRpcService: WalletRpcService,
     @inject(INJECTION_TOKEN.MESSAGING_SERVICE)
     private readonly messagingService: IMessagingService,
-    private readonly configService: ConfigService
+    @inject(INJECTION_TOKEN.CONFIG_SERVICE) private readonly configService: ConfigService,
   ) {
-    this.INBOX_SUBJECT = `${configService.getPublicIdentifer}.*.channel-inbox`;
+    this.INBOX_SUBJECT = `${configService.getPublicIdentifer}.*.${INBOX_SUBJECT}`;
   }
 
   public get destination(): Destination {
@@ -39,13 +42,16 @@ export class MessageRouter implements IMessageRouter {
   async init(): Promise<void> {
     // channel message subscription
     await this.messagingService.subscribe(this.INBOX_SUBJECT, (msg) =>
-      this.handleIncomingChannelMessage(msg)
+      this.handleIncomingChannelMessage(msg),
     );
   }
 
   async createChannel(
-    receiver: Participant
-  ): Promise<{ channelResult: ChannelResult }> {
+    receiver: Participant,
+  ): Promise<{
+    channelResult: ChannelResult;
+    completed: () => Promise<ChannelResult>;
+  }> {
     const {
       outbox: [{ params }],
       channelResult: { channelId },
@@ -70,38 +76,59 @@ export class MessageRouter implements IMessageRouter {
         },
       ],
     });
+
+    const { channelResult } = await this.walletRpcService.getChannel({
+      channelId,
+    });
+
+    const completed: Promise<ChannelResult> = new Promise(async (resolve) => {
+      const reply = await this.messageReceiverAndExpectReply(
+        receiver.participantId,
+        (params as WireMessage) as Message, // FIXME: inconsistent with server-wallet e2e test
+      );
+      await this.walletRpcService.pushMessage({
+        data: reply,
+        recipient: this.configService.getPublicIdentifer(),
+        sender: receiver.participantId,
+      });
+
+      const { channelResult } = await this.walletRpcService.getChannel({
+        channelId,
+      });
+      resolve(channelResult);
+    });
+
+    return {
+      channelResult,
+      completed: () => completed,
+    };
   }
 
   deposit(
-    params: DepositParams
+    params: DepositParams,
   ): Promise<{ completed(): Promise<ChannelResult> } & { txHash: string }> {
     throw new Error("Method not implemented.");
   }
 
-  updateChannel(params: UpdateChannelParams): Promise<ChannelResult> {
+  updateChannel(params: UpdateChannelParams): Promise<{ channelResult: ChannelResult }> {
     throw new Error("Method not implemented.");
   }
 
-  withdraw(params: DepositParams): Promise<ChannelResult & { txHash: string }> {
+  withdraw(params: DepositParams): Promise<{ channelResult: ChannelResult } & { txHash: string }> {
     throw new Error("Method not implemented.");
   }
 
-  handleIncomingChannelMessage(data: GenericMessage) {}
+  private handleIncomingChannelMessage(data: GenericMessage) {}
+
+  private async messageReceiverAndExpectReply(
+    receiverId: string,
+    message: Message,
+  ): Promise<Message> {
+    const reply = await this.messagingService.request(
+      `${receiverId}.${this.configService.getPublicIdentifer()}.${INBOX_SUBJECT}`,
+      MESSAGE_TIMEOUT,
+      message,
+    );
+    return reply;
+  }
 }
-
-@registry([
-  {
-    token: INJECTION_TOKEN.CHANNEL_WALLET,
-    useFactory: async (dependencyContainer) => {
-      // TODO: inject config into channel wallet
-      const router = new MessageRouter(
-        dependencyContainer.resolve(WalletRpcService),
-        dependencyContainer.resolve(INJECTION_TOKEN.MESSAGING_SERVICE),
-        dependencyContainer.resolve(ConfigService)
-      );
-      await router.init();
-      return router;
-    },
-  },
-])
-export class ChannelProvider {}

@@ -1,13 +1,9 @@
 import { singleton } from "tsyringe";
 import { config } from "dotenv";
 import { Wallet } from "ethers";
-import {
-  getPublicKeyFromPrivateKey,
-  getPublicIdentifierFromPublicKey,
-} from "@connext/utils";
+import { getPublicKeyFromPrivateKey, getPublicIdentifierFromPublicKey } from "@connext/utils";
 
 import { IConfigService } from "../types";
-import { Participant, makeDestination } from "@statechannels/wallet-core";
 
 const throwEnvError = (name: string) => {
   throw new Error(`No env var ${name} provided`);
@@ -57,13 +53,21 @@ export class ConfigService implements IConfigService {
     return this.getOrThrow("INDRA_PG_PASSWORD");
   }
 
+  getDatabaseName(): string {
+    return this.getOrThrow("INDRA_PG_NAME");
+  }
+
+  getDatabaseUser(): string {
+    return this.getOrThrow("INDRA_PG_USER");
+  }
+
   private get(key: string): string | undefined {
     return process.env[key];
   }
 
   private getOrThrow(key: string): string {
     const res = this.get(key);
-    if (!key) {
+    if (!res) {
       throwEnvError(key);
     }
     return res!;

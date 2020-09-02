@@ -1,17 +1,15 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "declaration": false,
-    "declarationMap": false,
+    "baseUrl": "./",
     "incremental": true,
-    "module": "commonjs",
     "noUnusedLocals": false,
     "outDir": "dist",
-    "resolveJsonModule": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "target": "es6"
+    "strict": false,
+    "target": "es6",
+    "declarationDir": "dist/",
+    "module": "commonjs"
   },
   "exclude": ["dist", "node_modules", "**/*spec.ts"],
-  "include": [ "src/**/*.ts" ]
+  "include": ["src/**/*.ts"]
 }

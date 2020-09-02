@@ -40,9 +40,9 @@ describe("MessageRouter", () => {
       signingAddress: mkAddress("0xbad"),
     };
     const result = await messageRouter.createChannel(testParticipant);
-    expect(result.allocations.length).to.be.eq(1);
-    expect(result.allocations[0].allocationItems.length).to.be.eq(2);
-    expect(result.allocations[0].token).to.be.eq(constants.AddressZero);
+    expect(result.channelResult.allocations.length).to.be.eq(1);
+    expect(result.channelResult.allocations[0].allocationItems.length).to.be.eq(2);
+    expect(result.channelResult.allocations[0].token).to.be.eq(constants.AddressZero);
     // TODO: fixed expects
   });
 });

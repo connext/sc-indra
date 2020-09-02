@@ -1,8 +1,5 @@
-import { registry, singleton, inject } from "tsyringe";
-import {
-  Wallet as ChannelWallet,
-  WalletInterface,
-} from "@statechannels/server-wallet";
+import { singleton, inject } from "tsyringe";
+import { WalletInterface } from "@statechannels/server-wallet";
 import {
   JoinChannelParams,
   UpdateChannelParams,
@@ -28,7 +25,6 @@ import {
   GetVersionResult,
   DefundChannelParams,
   GetParticipantParams,
-  IWalletRpcService,
   StateChannelsMethod,
   GetChannelsParams,
   StateChannelsParameters,
@@ -36,8 +32,7 @@ import {
   IRpcService,
 } from "../types";
 import { JsonRpcResponse } from "@connext/types";
-import { Wallet } from "ethers";
-import { ConfigService } from "../config";
+import { Message } from "@statechannels/wallet-core";
 
 /**
  * This class handles communication between the channel wallet and the
@@ -52,10 +47,10 @@ import { ConfigService } from "../config";
 export class WalletRpcService implements IRpcService {
   constructor(
     @inject(INJECTION_TOKEN.CHANNEL_WALLET)
-    private readonly channelWallet: WalletInterface
+    private readonly channelWallet: WalletInterface,
   ) {}
   dispatch(
-    request: JsonRpcRequest<string, object>
+    request: JsonRpcRequest<string, object>,
   ): Promise<JsonRpcResponse | JsonRpcErrorResponse<any>> {
     throw new Error("Method not implemented.");
   }
@@ -77,9 +72,7 @@ export class WalletRpcService implements IRpcService {
   public async defundChannel(params: DefundChannelParams): SingleChannelResult {
     return this.sendRpcRequest("DefundChannel", params);
   }
-  public async challengeChannel(
-    params: ChallengeChannelParams
-  ): SingleChannelResult {
+  public async challengeChannel(params: ChallengeChannelParams): SingleChannelResult {
     return this.sendRpcRequest("ChallengeChannel", params);
   }
   public async getChannels(params: GetChannelsParams): MultipleChannelResult {
@@ -88,21 +81,20 @@ export class WalletRpcService implements IRpcService {
   public async getChannel(params: GetChannelParams): SingleChannelResult {
     return this.sendRpcRequest("GetChannel", params);
   }
-  public async getParticipant(
-    params: GetParticipantParams
-  ): Promise<GetParticipantResult> {
+  public async getParticipant(params: GetParticipantParams): Promise<GetParticipantResult> {
     return this.sendRpcRequest("GetParticipant", params);
   }
   public async getVersion(): Promise<GetVersionResult> {
     return this.sendRpcRequest("GetVersion", {});
   }
   public async pushMessage(params: PushMessageParams): MultipleChannelResult {
-    return this.sendRpcRequest("PushMessage", params);
+    // return this.sendRpcRequest("PushMessage", params);
+    return this.channelWallet.pushMessage(params.data as Message);
   }
 
   private async sendRpcRequest<T extends StateChannelsMethod>(
     method: T,
-    params: StateChannelsParameters[T]
+    params: StateChannelsParameters[T],
   ): Promise<StateChannelsResults[T]> {
     // Generate + dispatch request
     const request: StateChannelsRequest = {
@@ -114,57 +106,18 @@ export class WalletRpcService implements IRpcService {
     // const response = await this.channelWallet.dispatch(request);
     const response = {};
     if (!isJsonRpcErrorResponse(response)) {
-      const error = (response as JsonRpcErrorResponse)
-        .error as StateChannelsError;
+      const error = (response as JsonRpcErrorResponse).error as StateChannelsError;
       // FIXME: add more logging for specialized error context from sc
       // error type
       throw new Error(error.message);
     }
 
     if (isJsonRpcResponse(response)) {
-      return (response as StateChannelsResponse)
-        .result as StateChannelsResults[T];
+      return (response as StateChannelsResponse).result as StateChannelsResults[T];
     }
 
     throw new Error(
-      `Unable to determine if this is json rpc result or error: ${safeJsonStringify(
-        response
-      )}`
+      `Unable to determine if this is json rpc result or error: ${safeJsonStringify(response)}`,
     );
   }
 }
-
-@registry([
-  {
-    token: INJECTION_TOKEN.CHANNEL_WALLET,
-    useFactory: (dependencyContainer) => {
-      const config = dependencyContainer.resolve(ConfigService);
-      const providerUrls = config.getChainProviders();
-      const chainId = Object.keys(providerUrls)[0];
-      if (!chainId) {
-        throw new Error(
-          `Expected at least one provider in ${JSON.stringify(providerUrls)}`
-        );
-      }
-      const pk = config.getPrivateKey();
-      process.env.NODE_ENV = "development";
-      // Just FYI: these SERVER_ prefix env vars config the channel wallet's database connection
-      process.env.SERVER_HOST = "database";
-      process.env.SERVER_PORT = "5432";
-      process.env.SERVER_DB_NAME = "indra";
-      process.env.SERVER_DB_USER = "indra";
-      process.env.SERVER_DB_PASSWORD = process.env.INDRA_PG_PASSWORD;
-      process.env.SERVER_SIGNER_PRIVATE_KEY = pk;
-      process.env.SERVER_PRIVATE_KEY = pk;
-      process.env.RPC_ENDPOINT = providerUrls[chainId];
-      process.env.CHAIN_NETWORK_ID = chainId;
-      process.env.ETH_ASSET_HOLDER_ADDRESS = "";
-      process.env.DEBUG_KNEX = "";
-      process.env.SKIP_EVM_VALIDATION = "";
-      process.env.TIMING_METRICS = "";
-      // TODO: inject config into channel wallet
-      return new ChannelWallet();
-    },
-  },
-])
-export class ChannelProvider {}

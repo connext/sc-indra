@@ -1,11 +1,13 @@
 {
-  "name": "non-routing-node",
+  "name": "@connext/isomorphic-node",
   "version": "0.0.1",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "test": "NODE_ENV=development ts-mocha --require src/test/hooks.ts -p ./tsconfig.json src/**/*.spec.ts",
-    "build": "tsc --project tsconfig.json"
+    "build": "tsc --project tsconfig.json",
+    "clean": "rm -rf dist"
   },
   "author": "",
   "license": "ISC",
