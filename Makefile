@@ -35,6 +35,8 @@ log_finish=@echo $$((`date "+%s"` - `cat $(startTime)`)) > $(totalTime); rm $(st
 
 default: indra
 indra: database proxy node
+extras: ethprovider
+all: indra extras
 
 ########################################
 # Command & Control Shortcuts
@@ -42,7 +44,17 @@ indra: database proxy node
 start: indra
 	bash ops/start-indra.sh
 
-clean:
+start-testnet: ethprovider
+	INDRA_CHAIN_LOG_LEVEL=1 bash ops/start-testnet.sh
+
+stop:
+	bash ops/stop.sh indra
+
+stop-all:
+	bash ops/stop.sh indra
+	bash ops/stop.sh testnet
+
+clean: stop-all
 	docker container prune -f
 	rm -rf .flags/*
 	rm -rf node_modules/@connext modules/*/node_modules/@connext
@@ -101,8 +113,14 @@ isomorphic-node: node-modules $(shell find modules/isomorphic-node $(find_option
 
 database: $(shell find ops/database $(find_options))
 	$(log_start)
-	docker build --file ops/database/db.dockerfile $(image_cache) --tag $(project)_database ops/database
+	docker build --file ops/database/Dockerfile $(image_cache) --tag $(project)_database ops/database
 	docker tag $(project)_database $(project)_database:$(commit)
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+ethprovider: $(shell find ops/ethprovider $(find_options))
+	$(log_start)
+	docker build --file ops/ethprovider/Dockerfile $(image_cache) --tag $(project)_ethprovider ops/ethprovider
+	docker tag $(project)_ethprovider $(project)_ethprovider:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 node: isomorphic-node $(shell find modules/isomorphic-node/ops $(find_options))

@@ -1,0 +1,10 @@
+{
+  "name": "ethprovider",
+  "description": "This is only used to install a few useful packages into a docker container",
+  "dependencies": {
+    "@nomiclabs/buidler": "1.4.4",
+    "@statechannels/nitro-protocol": "0.3.4",
+    "ethers": "5.0.9",
+    "ganache-cli": "6.10.1"
+  }
+}
