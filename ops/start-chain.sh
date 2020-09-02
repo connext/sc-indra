@@ -28,12 +28,17 @@ fi
 chain_data="$root/.chaindata/$chain_id"
 mkdir -p $chain_data
 
-version="latest"
-git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
-if [[ -n "$git_tag" ]]
-then version="`echo $git_tag | sed 's/indra-//'`"
-else version="`git rev-parse HEAD | head -c 8`"
+if [[ "$INDRA_ENV" == "prod" ]]
+then
+  git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
+  if [[ -n "$git_tag" ]]
+  then version="`echo $git_tag | sed 's/indra-//'`"
+  else version="`git rev-parse HEAD | head -c 8`"
+  fi
+else
+  version="latest"
 fi
+
 image="${project}_ethprovider:$version"
 
 echo "Running ${INDRA_ENV:-dev}-mode image for testnet ${chain_id}: ${image}"
@@ -62,8 +67,6 @@ do
   else sleep 1
   fi
 done
-
-echo "Provider is curlable, waiting for address book to appear"
 
 while [[ -z "`docker exec $ethprovider_host cat /data/address-book.json`" ]]
 do

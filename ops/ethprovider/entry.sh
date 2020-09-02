@@ -66,8 +66,6 @@ wait-for localhost:8545
 export MNEMONIC=$mnemonic
 node $cwd/migrate.js
 
-echo "Done migrating contracts, starting testnet"
-
 # Buidler does not persist chain data: it will start with a fresh chain every time
 # Ganache persists chain data so we can restart it & this time we'll expose it to the outside world
 if [[ "$engine" == "ganache" ]]

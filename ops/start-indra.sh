@@ -171,7 +171,6 @@ if [[ -z "$INDRA_CHAIN_PROVIDERS" ]]
 then
   mnemonic_secret_name="${project}_mnemonic_dev"
   echo 'No $INDRA_CHAIN_PROVIDERS provided, spinning up local testnets & using those.'
-  echo 'Jk not really'
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
   bash ops/save-secret.sh "$mnemonic_secret_name" "$eth_mnemonic"
   pull_if_unavailable "${project}_ethprovider:$version"
