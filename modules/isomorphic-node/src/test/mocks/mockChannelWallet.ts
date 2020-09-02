@@ -42,7 +42,7 @@ export class MockChannelWallet implements ChannelWalletInterface {
   /** Interface methods */
   createChannel(params: CreateChannelParams): SingleChannelResult {
     if (this.stubs.has("CreateChannel")) {
-      const cb = this.stubs.get("CreateChannel");
+      const cb = this.stubs.get("CreateChannel")!;
       return cb(params);
     }
     const channel = mockChannelResult({
@@ -58,7 +58,7 @@ export class MockChannelWallet implements ChannelWalletInterface {
   }
   joinChannel(params: JoinChannelParams): SingleChannelResult {
     if (this.stubs.has("JoinChannel")) {
-      const cb = this.stubs.get("JoinChannel");
+      const cb = this.stubs.get("JoinChannel")!;
       return cb(params);
     }
     const existing = this.getChannelOrThrow(params.channelId)
@@ -77,7 +77,7 @@ export class MockChannelWallet implements ChannelWalletInterface {
   }
   updateChannel(params: UpdateChannelParams): SingleChannelResult {
     if (this.stubs.has("UpdateChannel")) {
-      const cb = this.stubs.get("UpdateChannel");
+      const cb = this.stubs.get("UpdateChannel")!;
       return cb(params);
     }
     const existing = this.getChannelOrThrow(params.channelId);
@@ -94,7 +94,7 @@ export class MockChannelWallet implements ChannelWalletInterface {
   }
   closeChannel(params: CloseChannelParams): SingleChannelResult {
     if (this.stubs.has("CloseChannel")) {
-      const cb = this.stubs.get("CloseChannel");
+      const cb = this.stubs.get("CloseChannel")!;
       return cb(params);
     }
     const existing = this.getChannelOrThrow(params.channelId);
@@ -111,7 +111,7 @@ export class MockChannelWallet implements ChannelWalletInterface {
   }
   defundChannel(params: DefundChannelParams): SingleChannelResult {
     if (this.stubs.has("DefundChannel")) {
-      const cb = this.stubs.get("DefundChannel");
+      const cb = this.stubs.get("DefundChannel")!;
       return cb(params);
     }
     const existing = this.getChannelOrThrow(params.channelId);
@@ -128,14 +128,14 @@ export class MockChannelWallet implements ChannelWalletInterface {
   }
   challengeChannel(params: ChallengeChannelParams): SingleChannelResult {
     if (this.stubs.has("ChallengeChannel")) {
-      const cb = this.stubs.get("ChallengeChannel");
+      const cb = this.stubs.get("ChallengeChannel")!;
       return cb(params);
     }
     throw new Error("Mock not implemented");
   }
   getChannels(params: GetChannelsParams): MultipleChannelResult {
     if (this.stubs.has("GetChannels")) {
-      const cb = this.stubs.get("GetChannels");
+      const cb = this.stubs.get("GetChannels")!;
       return cb(params);
     }
     const channelResults = [...this.channels.values()];
@@ -143,15 +143,15 @@ export class MockChannelWallet implements ChannelWalletInterface {
   }
   getChannel(params: GetChannelParams): SingleChannelResult {
     if (this.stubs.has("GetChannel")) {
-      const cb = this.stubs.get("GetChannel");
+      const cb = this.stubs.get("GetChannel")!;
       return cb(params);
     }
-    const channelResult = this.channels.get(params.channelId);
+    const channelResult = this.channels.get(params.channelId)!;
     return Promise.resolve({ channelResult, outbox: [] });
   }
   getParticipant(params: GetParticipantParams): Promise<GetParticipantResult> {
     if (this.stubs.has("GetParticipant")) {
-      const cb = this.stubs.get("GetParticipant");
+      const cb = this.stubs.get("GetParticipant")!;
       return cb(params);
     }
     const channel = this.channels.get(params.channelId);
@@ -166,14 +166,14 @@ export class MockChannelWallet implements ChannelWalletInterface {
   }
   getVersion(): Promise<GetVersionResult> {
     if (this.stubs.has("GetVersion")) {
-      const cb = this.stubs.get("GetVersion");
+      const cb = this.stubs.get("GetVersion")!;
       return cb();
     }
     return Promise.resolve({ walletVersion: "0.0.1" });
   }
   pushMessage(params: PushMessageParams): MultipleChannelResult {
     if (this.stubs.has("PushMessage")) {
-      const cb = this.stubs.get("PushMessage");
+      const cb = this.stubs.get("PushMessage")!;
       return cb(params);
     }
     throw new Error("Mock not implemented");

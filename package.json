@@ -1,7 +1,17 @@
 {
-  "name": "root",
-  "private": true,
-  "devDependencies": {
-    "lerna": "^3.22.1"
-  }
+  "name": "sc-indra",
+  "version": "0.0.1",
+  "registry": "docker.io/connextproject",
+  "description": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ConnextProject/sc-indra.git"
+  },
+  "author": "Connext & Friends",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ConnextProject/sc-indra/issues"
+  },
+  "homepage": "https://github.com/ConnextProject/sc-indra#readme",
+  "devDependencies": {}
 }
