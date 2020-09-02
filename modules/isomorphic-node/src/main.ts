@@ -1,3 +1,4 @@
+import { Wallet } from "@statechannels/server-wallet";
 import "reflect-metadata";
 
-import { Wallet } from "@statechannels/server-wallet";
+console.log(`Nice`);

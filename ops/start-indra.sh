@@ -4,7 +4,6 @@ set -e
 root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
 project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 registry="`cat $root/package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
-tmp="$root/.tmp"; mkdir -p $tmp
 
 # turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
@@ -77,12 +76,6 @@ echo "Using docker images ${project}_name:${version} "
 # Misc Config
 
 builder_image="${project}_builder"
-
-redis_image="redis:5-alpine";
-pull_if_unavailable "$redis_image"
-
-# to access from other containers
-redis_url="redis://redis:6379"
 
 common="networks:
       - '$project'
@@ -178,13 +171,14 @@ if [[ -z "$INDRA_CHAIN_PROVIDERS" ]]
 then
   mnemonic_secret_name="${project}_mnemonic_dev"
   echo 'No $INDRA_CHAIN_PROVIDERS provided, spinning up local testnets & using those.'
+  echo 'Jk not really'
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
   bash ops/save-secret.sh "$mnemonic_secret_name" "$eth_mnemonic"
-  pull_if_unavailable "${project}_ethprovider:$version"
+  # pull_if_unavailable "${project}_ethprovider:$version"
   chain_id_1=1337; chain_id_2=1338;
-  bash ops/start-testnet.sh $chain_id_1 $chain_id_2
-  INDRA_CHAIN_PROVIDERS="`cat $root/.chaindata/providers/${chain_id_1}-${chain_id_2}.json`"
-  INDRA_CONTRACT_ADDRESSES="`cat $root/.chaindata/addresses/${chain_id_1}-${chain_id_2}.json`"
+  # bash ops/start-testnet.sh $chain_id_1 $chain_id_2
+  # INDRA_CHAIN_PROVIDERS="`cat $root/.chaindata/providers/${chain_id_1}-${chain_id_2}.json`"
+  # INDRA_CONTRACT_ADDRESSES="`cat $root/.chaindata/addresses/${chain_id_1}-${chain_id_2}.json`"
 
 # If chain providers are provided, use those
 else
@@ -203,73 +197,6 @@ ETH_PROVIDER_URL="`echo $INDRA_CHAIN_PROVIDERS | tr -d "'" | jq '.[]' | head -n 
 # TODO: filter out extra contract addresses that we don't have any chain providers for?
 
 echo "Chain providers configured"
-
-####################
-# Observability tools config
-
-LOGDNA_TAGS="indra-${INDRA_DOMAINNAME:-unknown}"
-
-logdna_image="logdna/logspout:v1.2.0";
-pull_if_unavailable "$logdna_image"
-
-grafana_image="grafana/grafana:latest"
-pull_if_unavailable "$grafana_image"
-
-prometheus_image="prom/prometheus:latest"
-pull_if_unavailable "$prometheus_image"
-
-cadvisor_image="gcr.io/google-containers/cadvisor:latest"
-pull_if_unavailable "$cadvisor_image"
-
-prometheus_services="prometheus:
-    image: $prometheus_image
-    $common
-    ports:
-      - 9090:9090
-    command:
-      - --config.file=/etc/prometheus/prometheus.yml
-    volumes:
-      - $root/ops/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-  cadvisor:
-    $common
-    image: $cadvisor_image
-    ports:
-      - 8081:8080
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:rw
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro"
-
-grafana_service="grafana:
-    image: '$grafana_image'
-    $common
-    networks:
-      - '$project'
-    ports:
-      - '3002:3000'
-    volumes:
-      - 'grafana:/var/lib/grafana'"
-
-logdna_service="logdna:
-    $common
-    image: '$logdna_image'
-    environment:
-      LOGDNA_KEY: '$INDRA_LOGDNA_KEY'
-      TAGS: '$LOGDNA_TAGS'
-    volumes:
-      - '/var/run/docker.sock:/var/run/docker.sock'"
-
-# TODO we probably want to remove observability from dev env once it's working
-# bc these make indra take a log longer to wake up
-
-if [[ "$INDRA_ENV" == "prod" ]]
-then observability_services="$logdna_service
-  $prometheus_services
-  $grafana_service"
-else observability_services="$prometheus_services
-  $grafana_service"
-fi
 
 ####################
 # Launch Indra stack
@@ -291,7 +218,6 @@ secrets:
     external: true
 
 volumes:
-  grafana:
   certs:
   $db_volume:
 
@@ -356,19 +282,6 @@ services:
     volumes:
       - '$db_volume:/var/lib/postgresql/data'
       - '$snapshots_dir:/root/snapshots'
-
-  nats:
-    $common
-    image: '$nats_image'
-    command: '-D -V'
-    environment:
-      JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'
-
-  redis:
-    $common
-    image: '$redis_image'
-
-  $observability_services
 
 EOF
 

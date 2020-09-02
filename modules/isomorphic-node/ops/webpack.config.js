@@ -10,16 +10,7 @@ module.exports = {
   entry: path.join(__dirname, "../src/main.ts"),
 
   externals: {
-    "@nestjs/websockets/socket-module": "commonjs2 @nestjs/websockets/socket-module",
-    "amqp-connection-manager": "commonjs2 amqp-connection-manager",
-    "amqplib": "commonjs2 amqplib",
-    "cache-manager": "commonjs2 cache-manager",
-    "class-transformer": "commonjs2 class-transformer",
-    "grpc": "commonjs2 grpc",
-    "kafkajs": "commonjs2 kafkajs",
-    "mqtt": "commonjs2 mqtt",
     "pg-native": "commonjs2 pg-native",
-    "redis": "commonjs2 redis",
     "sqlite3": "commonjs2 sqlite3",
   },
 

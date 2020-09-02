@@ -36,6 +36,12 @@ log_finish=@echo $$((`date "+%s"` - `cat $(startTime)`)) > $(totalTime); rm $(st
 default: indra
 indra: database proxy node
 
+########################################
+# Command & Control Shortcuts
+
+start: indra
+	bash ops/start-indra.sh
+
 clean:
 	docker container prune -f
 	rm -rf .flags/*
