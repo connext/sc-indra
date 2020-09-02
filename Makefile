@@ -10,9 +10,6 @@ root=$(shell cd "$(shell dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )
 project=$(shell cat $(root)/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4)
 commit=$(shell git rev-parse HEAD | head -c 8)
 
-# version that will be tested against for backwards compatibility checks
-backwards_compatible_version=$(shell cat package.json | grep '"backwardsCompatibleWith"' | head -n 1 | cut -d '"' -f 4)
-
 # If Linux, give the container our uid & gid so we know what to reset permissions to. If Mac, the docker-VM takes care of this for us so pass root's id (ie noop)
 id=$(shell if [[ "`uname`" == "Darwin" ]]; then echo 0:0; else echo "`id -u`:`id -g`"; fi)
 
@@ -37,7 +34,7 @@ log_finish=@echo $$((`date "+%s"` - `cat $(startTime)`)) > $(totalTime); rm $(st
 # Build Shortcuts
 
 default: indra
-indra: database proxy isomorphic-node
+indra: database proxy node
 
 clean:
 	docker container prune -f
@@ -104,7 +101,7 @@ database: $(shell find ops/database $(find_options))
 
 node: isomorphic-node $(shell find modules/isomorphic-node/ops $(find_options))
 	$(log_start)
-	docker build --file modules/node/ops/Dockerfile $(image_cache) --tag $(project)_node modules/node
+	docker build --file modules/isomorphic-node/ops/Dockerfile $(image_cache) --tag $(project)_node modules/isomorphic-node
 	docker tag $(project)_node $(project)_node:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
