@@ -3,30 +3,22 @@ import { IMessagingService, GenericMessage } from "@connext/types";
 import { makeDestination, Destination, Message } from "@statechannels/wallet-core";
 import { Message as WireMessage } from "@statechannels/wire-format";
 import { constants, BigNumber } from "ethers";
-import { inject, singleton } from "tsyringe";
 
 import { IMessageRouter, DepositParams, IWalletRpcService, IConfigService } from "../types";
-import { WalletRpcService } from "../rpc-service";
-import { INJECTION_TOKEN } from "../constants";
-import { ConfigService } from "../config";
+import { Logger } from "pino";
 
 // to.from.subject
 const INBOX_SUBJECT = `channel-inbox`;
 
 const MESSAGE_TIMEOUT = 10_000;
 
-@singleton()
 export class MessageRouter implements IMessageRouter {
-  private INBOX_SUBJECT: string;
   constructor(
-    @inject(INJECTION_TOKEN.WALLET_RPC_SERVICE)
     private readonly walletRpcService: IWalletRpcService,
-    @inject(INJECTION_TOKEN.MESSAGING_SERVICE)
     private readonly messagingService: IMessagingService,
-    @inject(INJECTION_TOKEN.CONFIG_SERVICE) private readonly configService: IConfigService,
-  ) {
-    this.INBOX_SUBJECT = `${configService.getPublicIdentifer}.*.${INBOX_SUBJECT}`;
-  }
+    private readonly configService: IConfigService,
+    private readonly logger: Logger,
+  ) {}
 
   public get destination(): Destination {
     return makeDestination(this.configService.getSignerAddress());
@@ -41,11 +33,15 @@ export class MessageRouter implements IMessageRouter {
   }
 
   async init(): Promise<void> {
+    this.logger.debug(`init() started`);
     await this.messagingService.connect();
+    this.logger.debug(`Connected messaging`);
     // channel message subscription
-    await this.messagingService.subscribe(this.INBOX_SUBJECT, (msg) =>
-      this.handleIncomingChannelMessage(msg),
-    );
+    const subject = `${this.configService.getPublicIdentifer()}.*.${INBOX_SUBJECT}`;
+    this.logger.debug(`Subscribing to ${subject}`);
+    await this.messagingService.subscribe(subject, (msg) => this.handleIncomingChannelMessage(msg));
+    this.logger.debug(`Message subscription complete`);
+    this.logger.debug(`init() finished`);
   }
 
   async createChannel(
@@ -54,6 +50,7 @@ export class MessageRouter implements IMessageRouter {
     channelResult: ChannelResult;
     completed: () => Promise<ChannelResult>;
   }> {
+    this.logger.debug(`createChannel() started`, { receiver });
     const {
       outbox: [{ params }],
       channelResult: { channelId },
@@ -100,6 +97,7 @@ export class MessageRouter implements IMessageRouter {
       resolve(channelResult);
     });
 
+    this.logger.debug(`createChannel() finished`, { channelResult, completed: () => completed });
     return {
       channelResult,
       completed: () => completed,

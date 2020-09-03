@@ -1,11 +1,10 @@
 import { connect, Client } from "ts-nats";
-import { singleton } from "tsyringe";
 import { IMessagingService, GenericMessage } from "@connext/types";
+import { Logger } from "pino";
 
-@singleton()
 export class TempNatsMessagingService implements IMessagingService {
   private connection: Client;
-  constructor(private readonly natsUrl: string) {}
+  constructor(private readonly natsUrl: string, private readonly logger: Logger) {}
 
   private assertConnected(): void {
     if (!this.connection) {

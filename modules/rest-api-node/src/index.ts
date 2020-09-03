@@ -1,5 +1,7 @@
 import fastify from "fastify";
-import { IsomorphicNode } from "@connext/isomorphic-node";
+import { createNode } from "@connext/isomorphic-node";
+
+import { config } from "./config";
 
 const server = fastify();
 
@@ -15,9 +17,9 @@ server.listen(8888, (err, address) => {
   console.log(`Indra node listening at ${address}`);
 });
 
-const isoNode = new IsomorphicNode();
-
+const isoNode = createNode(config);
 server.addHook("onReady", async function () {
   // Some async code
   await isoNode.init();
+  console.log(`Initialized node`);
 });

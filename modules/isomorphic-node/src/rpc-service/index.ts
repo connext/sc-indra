@@ -1,4 +1,3 @@
-import { singleton, inject } from "tsyringe";
 import { WalletInterface } from "@statechannels/server-wallet";
 import {
   JoinChannelParams,
@@ -33,6 +32,7 @@ import {
 } from "../types";
 import { JsonRpcResponse } from "@connext/types";
 import { Message } from "@statechannels/wallet-core";
+import { Logger } from "pino";
 
 /**
  * This class handles communication between the channel wallet and the
@@ -43,12 +43,8 @@ import { Message } from "@statechannels/wallet-core";
  * The channel wallet will return a request or an error, which will be
  * returned or thrown, respectively.
  */
-@singleton()
 export class WalletRpcService implements IRpcService {
-  constructor(
-    @inject(INJECTION_TOKEN.CHANNEL_WALLET)
-    private readonly channelWallet: WalletInterface,
-  ) {}
+  constructor(private readonly channelWallet: WalletInterface, private readonly logger: Logger) {}
   dispatch(
     request: JsonRpcRequest<string, object>,
   ): Promise<JsonRpcResponse | JsonRpcErrorResponse<any>> {

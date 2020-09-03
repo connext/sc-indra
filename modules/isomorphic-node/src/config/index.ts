@@ -1,22 +1,20 @@
-import { singleton } from "tsyringe";
 import { config } from "dotenv";
 import { Wallet } from "ethers";
 import { getPublicKeyFromPrivateKey, getPublicIdentifierFromPublicKey } from "@connext/utils";
 
-import { IConfigService } from "../types";
+import { IConfigService, NodeConfigOptions } from "../types";
 
 const throwEnvError = (name: string) => {
   throw new Error(`No env var ${name} provided`);
 };
 
-@singleton()
 export class ConfigService implements IConfigService {
-  constructor() {
+  constructor(private readonly opts?: NodeConfigOptions) {
     config();
   }
 
   getMnemonic(): string {
-    return this.getOrThrow("INDRA_MNEMONIC");
+    return this.opts.mnemonic || this.getOrThrow("INDRA_MNEMONIC");
   }
 
   getPrivateKey(): string {
@@ -24,7 +22,7 @@ export class ConfigService implements IConfigService {
   }
 
   getChainProviders(): { [chainId: string]: string } {
-    return JSON.parse(this.getOrThrow("INDRA_CHAIN_PROVIDERS"));
+    return this.opts.chainProviders || JSON.parse(this.getOrThrow("INDRA_CHAIN_PROVIDERS"));
   }
 
   getPublicIdentifer(): string {
@@ -38,27 +36,27 @@ export class ConfigService implements IConfigService {
   }
 
   getMessagingUrl(): string {
-    return this.getOrThrow("INDRA_NATS_SERVERS");
+    return this.opts.messagingUrl || this.getOrThrow("INDRA_NATS_SERVERS");
   }
 
   getDatabaseHost(): string {
-    return this.getOrThrow("INDRA_PG_HOST");
+    return this.opts.databaseHost || this.getOrThrow("INDRA_PG_HOST");
   }
 
-  getDatabasePort(): string {
-    return this.getOrThrow("INDRA_PG_PORT");
+  getDatabasePort(): number {
+    return this.opts.databasePort || parseInt(this.getOrThrow("INDRA_PG_PORT"));
   }
 
   getDatabasePassword(): string {
-    return this.getOrThrow("INDRA_PG_PASSWORD");
+    return this.opts.databasePassword || this.getOrThrow("INDRA_PG_PASSWORD");
   }
 
   getDatabaseName(): string {
-    return this.getOrThrow("INDRA_PG_NAME");
+    return this.opts.databaseName || this.getOrThrow("INDRA_PG_DATABASE");
   }
 
   getDatabaseUser(): string {
-    return this.getOrThrow("INDRA_PG_USER");
+    return this.opts.databaseUser || this.getOrThrow("INDRA_PG_USERNAME");
   }
 
   private get(key: string): string | undefined {

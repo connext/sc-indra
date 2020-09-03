@@ -7,7 +7,7 @@ import {
 } from "@statechannels/client-api-schema";
 import { BigNumber } from "ethers";
 
-type Completed<T> = {
+export type Completed<T> = {
   completed: () => Promise<T>;
 };
 

@@ -10,38 +10,25 @@ describe("RpcService", () => {
   let rpcService: WalletRpcService;
   let mockedWallet = new MockChannelWallet();
 
-  beforeEach(() => {
-    container.register(INJECTION_TOKEN.CHANNEL_WALLET, {
-      useValue: mockedWallet,
-    });
-    rpcService = container.resolve(WalletRpcService);
-  });
+  beforeEach(() => {});
 
-  afterEach(() => {
-    container.reset();
-  });
+  afterEach(() => {});
 
   for (const nonCamelCased of Object.keys(StateChannelsMethods)) {
-    const serviceMethod =
-      nonCamelCased.substr(0, 1).toLowerCase() + nonCamelCased.substr(1);
+    const serviceMethod = nonCamelCased.substr(0, 1).toLowerCase() + nonCamelCased.substr(1);
     const params = mockRpcParams(nonCamelCased as StateChannelsMethod);
 
     it(`should correctly call the ${nonCamelCased} method`, async () => {
-      mockedWallet.addStub(
-        nonCamelCased as StateChannelsMethod,
-        (params) => params
-      );
+      mockedWallet.addStub(nonCamelCased as StateChannelsMethod, (params) => params);
       const response = await rpcService[serviceMethod](params);
       expect(response).to.be.deep.eq(params);
     });
 
     it(`should correctly throw from the ${nonCamelCased} method`, async () => {
       mockedWallet.addStub(nonCamelCased as StateChannelsMethod, (params) =>
-        Promise.reject(`Fail`)
+        Promise.reject(`Fail`),
       );
-      await expect(rpcService[serviceMethod](params)).should.be.rejectedWith(
-        `Fail`
-      );
+      await expect(rpcService[serviceMethod](params)).should.be.rejectedWith(`Fail`);
     });
   }
 });
