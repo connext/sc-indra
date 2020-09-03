@@ -5,7 +5,7 @@ import { Message as WireMessage } from "@statechannels/wire-format";
 import { constants, BigNumber } from "ethers";
 import { inject, singleton } from "tsyringe";
 
-import { IMessageRouter, DepositParams } from "../types";
+import { IMessageRouter, DepositParams, IWalletRpcService, IConfigService } from "../types";
 import { WalletRpcService } from "../rpc-service";
 import { INJECTION_TOKEN } from "../constants";
 import { ConfigService } from "../config";
@@ -19,10 +19,11 @@ const MESSAGE_TIMEOUT = 10_000;
 export class MessageRouter implements IMessageRouter {
   private INBOX_SUBJECT: string;
   constructor(
-    @inject(INJECTION_TOKEN.WALLET_RPC_SERVICE) private readonly walletRpcService: WalletRpcService,
+    @inject(INJECTION_TOKEN.WALLET_RPC_SERVICE)
+    private readonly walletRpcService: IWalletRpcService,
     @inject(INJECTION_TOKEN.MESSAGING_SERVICE)
     private readonly messagingService: IMessagingService,
-    @inject(INJECTION_TOKEN.CONFIG_SERVICE) private readonly configService: ConfigService,
+    @inject(INJECTION_TOKEN.CONFIG_SERVICE) private readonly configService: IConfigService,
   ) {
     this.INBOX_SUBJECT = `${configService.getPublicIdentifer}.*.${INBOX_SUBJECT}`;
   }
@@ -40,6 +41,7 @@ export class MessageRouter implements IMessageRouter {
   }
 
   async init(): Promise<void> {
+    await this.messagingService.connect();
     // channel message subscription
     await this.messagingService.subscribe(this.INBOX_SUBJECT, (msg) =>
       this.handleIncomingChannelMessage(msg),

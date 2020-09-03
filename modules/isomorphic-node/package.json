@@ -21,9 +21,10 @@
     "@statechannels/wire-format": "0.3.4",
     "dotenv": "8.2.0",
     "ethers": "5.0.9",
+    "reflect-metadata": "0.1.13",
+    "ts-nats": "^1.2.15",
     "ts-natsutil": "1.1.1",
-    "tsyringe": "4.3.0",
-    "reflect-metadata": "0.1.13"
+    "tsyringe": "4.3.0"
   },
   "devDependencies": {
     "@types/chai": "^4.2.12",

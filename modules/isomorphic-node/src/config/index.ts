@@ -38,7 +38,7 @@ export class ConfigService implements IConfigService {
   }
 
   getMessagingUrl(): string {
-    return this.getOrThrow("INDRA_MESSAGING_URL");
+    return this.getOrThrow("INDRA_NATS_SERVERS");
   }
 
   getDatabaseHost(): string {
