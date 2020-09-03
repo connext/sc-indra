@@ -47,8 +47,8 @@ while ! curl -s $INDRA_ETH_PROVIDER_HOST > /dev/null
 do sleep 2
 done
 
-echo "waiting for $INDRA_MESSAGING_WS_URL..."
-wait-for -t 60 $INDRA_MESSAGING_WS_URL 2> /dev/null
+# echo "waiting for $INDRA_MESSAGING_WS_URL..."
+# wait-for -t 60 $INDRA_MESSAGING_WS_URL 2> /dev/null
 
 echo "waiting for $INDRA_MESSAGING_TCP_URL..."
 wait-for -t 60 $INDRA_MESSAGING_TCP_URL 2> /dev/null

@@ -84,6 +84,13 @@ common="networks:
       options:
           max-size: '100m'"
 
+# TODO: switch to auth version
+nats_image="nats:latest";
+pull_if_unavailable "$nats_image"
+
+nats_port="4222"
+nats_ws_port="4221"
+
 ####################
 # Proxy config
 
@@ -94,9 +101,7 @@ if [[ -z "$INDRA_DOMAINNAME" ]]
 then
   public_url="http://localhost:3000"
   proxy_ports="ports:
-      - '3000:80'
-      - '4221:4221'
-      - '4222:4222'"
+      - '3000:80'"
 else
   public_url="https://localhost:443"
   proxy_ports="ports:
@@ -115,12 +120,12 @@ node_port="8888"
 
 if [[ $INDRA_ENV == "prod" ]]
 then
-  node_image_name="${project}_node:$version"
+  node_image_name="${project}_rest-api-node:$version"
   pull_if_unavailable "$node_image_name"
   node_image="image: '$node_image_name'"
 else
   node_image="image: '${project}_builder'
-    entrypoint: 'bash modules/isomorphic-node/ops/entry.sh'
+    entrypoint: 'bash modules/rest-api-node/ops/entry.sh'
     volumes:
       - '$root:/root'
     ports:
@@ -241,6 +246,8 @@ services:
     $node_image
     environment:
       INDRA_ADMIN_TOKEN: '$INDRA_ADMIN_TOKEN'
+      INDRA_ALLOWED_SWAPS: '$INDRA_ALLOWED_SWAPS'
+      INDRA_SUPPORTED_TOKENS: '$INDRA_SUPPORTED_TOKENS'
       INDRA_CHAIN_PROVIDERS: '$INDRA_CHAIN_PROVIDERS'
       INDRA_CONTRACT_ADDRESSES: '$INDRA_CONTRACT_ADDRESSES'
       INDRA_DEFAULT_REBALANCE_PROFILE_ETH: '$INDRA_DEFAULT_REBALANCE_PROFILE_ETH'
@@ -264,6 +271,8 @@ services:
     secrets:
       - '$db_secret'
       - '$mnemonic_secret_name'
+    ports:
+      - '$node_port:$node_port'
 
   database:
     $common
@@ -281,6 +290,15 @@ services:
     volumes:
       - '$db_volume:/var/lib/postgresql/data'
       - '$snapshots_dir:/root/snapshots'
+
+  nats:
+    $common
+    image: '$nats_image'
+    command: '-D -V'
+    environment:
+      JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'
+    ports:
+      - '4222:4222'
 
 EOF
 

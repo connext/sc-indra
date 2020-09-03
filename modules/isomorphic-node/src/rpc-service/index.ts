@@ -1,5 +1,5 @@
-import { registry, singleton, inject } from "tsyringe";
-import { Wallet as ChannelWallet } from "@statechannels/server-wallet";
+import { singleton, inject } from "tsyringe";
+import { WalletInterface } from "@statechannels/server-wallet";
 import {
   JoinChannelParams,
   UpdateChannelParams,
@@ -14,6 +14,7 @@ import {
   StateChannelsResponse,
   isJsonRpcErrorResponse,
   isJsonRpcResponse,
+  JsonRpcRequest,
 } from "@statechannels/client-api-schema";
 import { INJECTION_TOKEN } from "../constants";
 import { safeJsonStringify } from "../utils";
@@ -24,13 +25,14 @@ import {
   GetVersionResult,
   DefundChannelParams,
   GetParticipantParams,
-  RpcServiceInterface,
-  ChannelWalletInterface,
   StateChannelsMethod,
   GetChannelsParams,
   StateChannelsParameters,
   StateChannelsResults,
+  IRpcService,
 } from "../types";
+import { JsonRpcResponse } from "@connext/types";
+import { Message } from "@statechannels/wallet-core";
 
 /**
  * This class handles communication between the channel wallet and the
@@ -42,14 +44,21 @@ import {
  * returned or thrown, respectively.
  */
 @singleton()
-export class RpcService implements RpcServiceInterface {
+export class WalletRpcService implements IRpcService {
   constructor(
     @inject(INJECTION_TOKEN.CHANNEL_WALLET)
-    private readonly channelWallet: ChannelWalletInterface
+    private readonly channelWallet: WalletInterface,
   ) {}
+  dispatch(
+    request: JsonRpcRequest<string, object>,
+  ): Promise<JsonRpcResponse | JsonRpcErrorResponse<any>> {
+    throw new Error("Method not implemented.");
+  }
 
+  // TODO: switch to RPC interface
   public async createChannel(params: CreateChannelParams): SingleChannelResult {
-    return this.sendRpcRequest("CreateChannel", params);
+    // return this.sendRpcRequest("CreateChannel", params);
+    return this.channelWallet.createChannel(params);
   }
   public async joinChannel(params: JoinChannelParams): SingleChannelResult {
     return this.sendRpcRequest("JoinChannel", params);
@@ -63,9 +72,7 @@ export class RpcService implements RpcServiceInterface {
   public async defundChannel(params: DefundChannelParams): SingleChannelResult {
     return this.sendRpcRequest("DefundChannel", params);
   }
-  public async challengeChannel(
-    params: ChallengeChannelParams
-  ): SingleChannelResult {
+  public async challengeChannel(params: ChallengeChannelParams): SingleChannelResult {
     return this.sendRpcRequest("ChallengeChannel", params);
   }
   public async getChannels(params: GetChannelsParams): MultipleChannelResult {
@@ -74,21 +81,20 @@ export class RpcService implements RpcServiceInterface {
   public async getChannel(params: GetChannelParams): SingleChannelResult {
     return this.sendRpcRequest("GetChannel", params);
   }
-  public async getParticipant(
-    params: GetParticipantParams
-  ): Promise<GetParticipantResult> {
+  public async getParticipant(params: GetParticipantParams): Promise<GetParticipantResult> {
     return this.sendRpcRequest("GetParticipant", params);
   }
   public async getVersion(): Promise<GetVersionResult> {
     return this.sendRpcRequest("GetVersion", {});
   }
   public async pushMessage(params: PushMessageParams): MultipleChannelResult {
-    return this.sendRpcRequest("PushMessage", params);
+    // return this.sendRpcRequest("PushMessage", params);
+    return this.channelWallet.pushMessage(params.data as Message);
   }
 
   private async sendRpcRequest<T extends StateChannelsMethod>(
     method: T,
-    params: StateChannelsParameters[T]
+    params: StateChannelsParameters[T],
   ): Promise<StateChannelsResults[T]> {
     // Generate + dispatch request
     const request: StateChannelsRequest = {
@@ -97,35 +103,21 @@ export class RpcService implements RpcServiceInterface {
       method: method as any,
       params,
     };
-    const response = await this.channelWallet.dispatch(request);
+    // const response = await this.channelWallet.dispatch(request);
+    const response = {};
     if (!isJsonRpcErrorResponse(response)) {
-      const error = (response as JsonRpcErrorResponse)
-        .error as StateChannelsError;
+      const error = (response as JsonRpcErrorResponse).error as StateChannelsError;
       // FIXME: add more logging for specialized error context from sc
       // error type
       throw new Error(error.message);
     }
 
     if (isJsonRpcResponse(response)) {
-      return (response as StateChannelsResponse)
-        .result as StateChannelsResults[T];
+      return (response as StateChannelsResponse).result as StateChannelsResults[T];
     }
 
     throw new Error(
-      `Unable to determine if this is json rpc result or error: ${safeJsonStringify(
-        response
-      )}`
+      `Unable to determine if this is json rpc result or error: ${safeJsonStringify(response)}`,
     );
   }
 }
-
-@registry([
-  {
-    token: INJECTION_TOKEN.CHANNEL_WALLET,
-    useFactory: (dependencyContainer) => {
-      // TODO: inject config into channel wallet
-      return new ChannelWallet();
-    },
-  },
-])
-export class ChannelProvider {}

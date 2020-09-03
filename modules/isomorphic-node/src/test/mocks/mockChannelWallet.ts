@@ -1,5 +1,5 @@
 import {
-  ChannelWalletInterface,
+  IWalletRpcService,
   SingleChannelResult,
   DefundChannelParams,
   MultipleChannelResult,
@@ -24,7 +24,7 @@ import {
   JsonRpcErrorResponse,
 } from "@statechannels/client-api-schema";
 import { mockChannelResult, mockOutgoing } from "../channel";
-export class MockChannelWallet implements ChannelWalletInterface {
+export class MockChannelWallet implements IWalletRpcService {
   constructor(
     private readonly channels: Map<Bytes32, ChannelResult> = new Map(),
     private readonly stubs: Map<StateChannelsMethod, Function> = new Map()
@@ -51,7 +51,7 @@ export class MockChannelWallet implements ChannelWalletInterface {
     this.channels.set(channel.channelId, channel);
     const outbox = mockOutgoing({
       params: channel,
-      // FIXME: allign methods with rpc intercaes
+      // FIXME: align methods with rpc intercaes
       method: "ChannelProposed",
     });
     return Promise.resolve({ channelResult: channel, outbox: [outbox] });
@@ -61,7 +61,7 @@ export class MockChannelWallet implements ChannelWalletInterface {
       const cb = this.stubs.get("JoinChannel")!;
       return cb(params);
     }
-    const existing = this.getChannelOrThrow(params.channelId)
+    const existing = this.getChannelOrThrow(params.channelId);
     const updated = mockChannelResult({
       ...this.channels.get(params.channelId),
       status: "opening",
@@ -70,7 +70,7 @@ export class MockChannelWallet implements ChannelWalletInterface {
     this.channels.set(params.channelId, updated);
     const outbox = mockOutgoing({
       params: updated,
-      // FIXME: allign methods with rpc intercaes
+      // FIXME: align methods with rpc intercaes
       method: "ChannelUpdated",
     });
     return Promise.resolve({ channelResult: updated, outbox: [outbox] });
@@ -252,7 +252,7 @@ export class MockChannelWallet implements ChannelWalletInterface {
 
   private getChannelOrThrow(channelId: string): ChannelResult {
     if (!this.channels.has(channelId)) {
-      throw new Error(`No channel found for ${channelId}`)
+      throw new Error(`No channel found for ${channelId}`);
     }
     return this.channels.get(channelId)!;
   }

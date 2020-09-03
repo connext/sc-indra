@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-if [[ -d "modules/isomorphic-node" ]]
-then cd modules/isomorphic-node
+if [[ -d "modules/rest-api-node" ]]
+then cd modules/rest-api-node
 fi
 
 ########################################
@@ -50,12 +50,13 @@ then
     --delay 1 \
     --exitcrash \
     --ignore *.test.ts \
+    --ignore *.spec.ts \
     --ignore *.swp \
     --legacy-watch \
     --polling-interval 1000 \
     --watch src \
     --exec ts-node \
-    ./src/main.ts
+    ./src/index.ts
 else
   echo "Starting indra node in prod-mode"
   exec node --no-deprecation dist/bundle.js

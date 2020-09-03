@@ -13,5 +13,11 @@
     "url": "https://github.com/ConnextProject/sc-indra/issues"
   },
   "homepage": "https://github.com/ConnextProject/sc-indra#readme",
-  "devDependencies": {}
+  "scripts": {
+    "bootstrap": "lerna bootstrap --hoist"
+  },
+  "devDependencies": {
+    "lerna": "^3.22.1",
+    "prettier": "^2.1.1"
+  }
 }
