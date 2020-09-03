@@ -14,7 +14,7 @@ commit=$(shell git rev-parse HEAD | head -c 8)
 id=$(shell if [[ "`uname`" == "Darwin" ]]; then echo 0:0; else echo "`id -u`:`id -g`"; fi)
 
 # Pool of images to pull cached layers from during docker build steps
-image_cache=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_builder:latest,$(project)_database:latest,$(project)_ethprovider:latest,$(project)_node:latest,$(project)_proxy:latest"; else echo ""; fi)
+image_cache=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_builder:latest,$(project)_database:latest,$(project)_ethprovider:latest,$(project)_rest-api-node:latest,$(project)_proxy:latest"; else echo ""; fi)
 
 interactive=$(shell if [[ -t 0 && -t 2 ]]; then echo "--interactive"; else echo ""; fi)
 
@@ -34,7 +34,7 @@ log_finish=@echo $$((`date "+%s"` - `cat $(startTime)`)) > $(totalTime); rm $(st
 # Build Shortcuts
 
 default: indra
-indra: database proxy node
+indra: database proxy rest-api-node
 extras: ethprovider
 all: indra extras
 
@@ -108,6 +108,11 @@ isomorphic-node: node-modules $(shell find modules/isomorphic-node $(find_option
 	$(docker_run) "cd modules/isomorphic-node && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
+rest-api-node-bundle: node-modules $(shell find modules/rest-api-node $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/rest-api-node && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
 ########################################
 # Build Docker Images
 
@@ -123,10 +128,10 @@ ethprovider: $(shell find ops/ethprovider $(find_options))
 	docker tag $(project)_ethprovider $(project)_ethprovider:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-node: isomorphic-node $(shell find modules/isomorphic-node/ops $(find_options))
+rest-api-node: isomorphic-node rest-api-node-bundle $(shell find modules/rest-api-node/ops $(find_options))
 	$(log_start)
-	docker build --file modules/isomorphic-node/ops/Dockerfile $(image_cache) --tag $(project)_node modules/isomorphic-node
-	docker tag $(project)_node $(project)_node:$(commit)
+	docker build --file modules/rest-api-node/ops/Dockerfile $(image_cache) --tag $(project)_rest-api-node modules/rest-api-node
+	docker tag $(project)_rest-api-node $(project)_rest-api-node:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 proxy: $(shell find ops/proxy $(find_options))

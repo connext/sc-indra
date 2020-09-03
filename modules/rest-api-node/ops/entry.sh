@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-if [[ -d "modules/isomorphic-node" ]]
-then cd modules/isomorphic-node
+if [[ -d "modules/rest-api-node" ]]
+then cd modules/rest-api-node
 fi
 
 ########################################
@@ -50,6 +50,7 @@ then
     --delay 1 \
     --exitcrash \
     --ignore *.test.ts \
+    --ignore *.spec.ts \
     --ignore *.swp \
     --legacy-watch \
     --polling-interval 1000 \

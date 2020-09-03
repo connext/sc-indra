@@ -84,6 +84,13 @@ common="networks:
       options:
           max-size: '100m'"
 
+# TODO: switch to auth version
+nats_image="nats:latest";
+pull_if_unavailable "$nats_image"
+
+nats_port="4222"
+nats_ws_port="4221"
+
 ####################
 # Proxy config
 
@@ -94,9 +101,7 @@ if [[ -z "$INDRA_DOMAINNAME" ]]
 then
   public_url="http://localhost:3000"
   proxy_ports="ports:
-      - '3000:80'
-      - '4221:4221'
-      - '4222:4222'"
+      - '3000:80'"
 else
   public_url="https://localhost:443"
   proxy_ports="ports:
@@ -236,35 +241,6 @@ services:
     volumes:
       - 'certs:/etc/letsencrypt'
 
-  node:
-    $common
-    $node_image
-    environment:
-      INDRA_ADMIN_TOKEN: '$INDRA_ADMIN_TOKEN'
-      INDRA_CHAIN_PROVIDERS: '$INDRA_CHAIN_PROVIDERS'
-      INDRA_CONTRACT_ADDRESSES: '$INDRA_CONTRACT_ADDRESSES'
-      INDRA_DEFAULT_REBALANCE_PROFILE_ETH: '$INDRA_DEFAULT_REBALANCE_PROFILE_ETH'
-      INDRA_DEFAULT_REBALANCE_PROFILE_TOKEN: '$INDRA_DEFAULT_REBALANCE_PROFILE_TOKEN'
-      INDRA_LOG_LEVEL: '$INDRA_LOG_LEVEL'
-      INDRA_MNEMONIC_FILE: '$INDRA_MNEMONIC_FILE'
-      INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: '$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY'
-      INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'
-      INDRA_NATS_SERVERS: 'nats://nats:$nats_port'
-      INDRA_NATS_WS_ENDPOINT: 'wss://nats:$nats_ws_port'
-      INDRA_PG_DATABASE: '$pg_db'
-      INDRA_PG_HOST: '$pg_host'
-      INDRA_PG_PASSWORD_FILE: '$pg_password_file'
-      INDRA_PG_PORT: '$pg_port'
-      INDRA_PG_USERNAME: '$pg_user'
-      INDRA_PORT: '$node_port'
-      INDRA_REDIS_URL: '$redis_url'
-      NODE_ENV: '`
-        if [[ "$INDRA_ENV" == "prod" ]]; then echo "production"; else echo "development"; fi
-      `'
-    secrets:
-      - '$db_secret'
-      - '$mnemonic_secret_name'
-
   database:
     $common
     $database_image
@@ -281,6 +257,15 @@ services:
     volumes:
       - '$db_volume:/var/lib/postgresql/data'
       - '$snapshots_dir:/root/snapshots'
+
+  nats:
+    $common
+    image: '$nats_image'
+    command: '-D -V'
+    environment:
+      JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'
+    ports:
+      - '4222:4222'
 
 EOF
 
