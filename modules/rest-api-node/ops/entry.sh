@@ -56,7 +56,7 @@ then
     --polling-interval 1000 \
     --watch src \
     --exec ts-node \
-    ./src/main.ts
+    ./src/index.ts
 else
   echo "Starting indra node in prod-mode"
   exec node --no-deprecation dist/bundle.js

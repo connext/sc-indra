@@ -120,12 +120,12 @@ node_port="8888"
 
 if [[ $INDRA_ENV == "prod" ]]
 then
-  node_image_name="${project}_node:$version"
+  node_image_name="${project}_rest-api-node:$version"
   pull_if_unavailable "$node_image_name"
   node_image="image: '$node_image_name'"
 else
   node_image="image: '${project}_builder'
-    entrypoint: 'bash modules/isomorphic-node/ops/entry.sh'
+    entrypoint: 'bash modules/rest-api-node/ops/entry.sh'
     volumes:
       - '$root:/root'
     ports:
@@ -240,6 +240,39 @@ services:
       INDRA_NODE_URL: 'node:$node_port'
     volumes:
       - 'certs:/etc/letsencrypt'
+
+  node:
+    $common
+    $node_image
+    environment:
+      INDRA_ADMIN_TOKEN: '$INDRA_ADMIN_TOKEN'
+      INDRA_ALLOWED_SWAPS: '$INDRA_ALLOWED_SWAPS'
+      INDRA_SUPPORTED_TOKENS: '$INDRA_SUPPORTED_TOKENS'
+      INDRA_CHAIN_PROVIDERS: '$INDRA_CHAIN_PROVIDERS'
+      INDRA_CONTRACT_ADDRESSES: '$INDRA_CONTRACT_ADDRESSES'
+      INDRA_DEFAULT_REBALANCE_PROFILE_ETH: '$INDRA_DEFAULT_REBALANCE_PROFILE_ETH'
+      INDRA_DEFAULT_REBALANCE_PROFILE_TOKEN: '$INDRA_DEFAULT_REBALANCE_PROFILE_TOKEN'
+      INDRA_LOG_LEVEL: '$INDRA_LOG_LEVEL'
+      INDRA_MNEMONIC_FILE: '$INDRA_MNEMONIC_FILE'
+      INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: '$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY'
+      INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'
+      INDRA_NATS_SERVERS: 'nats://nats:$nats_port'
+      INDRA_NATS_WS_ENDPOINT: 'wss://nats:$nats_ws_port'
+      INDRA_PG_DATABASE: '$pg_db'
+      INDRA_PG_HOST: '$pg_host'
+      INDRA_PG_PASSWORD_FILE: '$pg_password_file'
+      INDRA_PG_PORT: '$pg_port'
+      INDRA_PG_USERNAME: '$pg_user'
+      INDRA_PORT: '$node_port'
+      INDRA_REDIS_URL: '$redis_url'
+      NODE_ENV: '`
+        if [[ "$INDRA_ENV" == "prod" ]]; then echo "production"; else echo "development"; fi
+      `'
+    secrets:
+      - '$db_secret'
+      - '$mnemonic_secret_name'
+    ports:
+      - '$node_port:$node_port'
 
   database:
     $common
