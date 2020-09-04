@@ -54,11 +54,5 @@
     "joi": "^17.2.1",
     "lokijs": "^1.5.11",
     "ts-nats": "^1.2.15"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "npm run husky:precommit",
-      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
-    }
   }
 }
